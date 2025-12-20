@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Karne</title>
+    <meta name="description" content="Karne">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./favicon.ico">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0b3d2e">
+
+    <script src="./script.js"></script>
+<style>
+body{
+    margin:0;
+    font-family:system-ui;
+    background:#0b3d2e;
+    color:white;
+    display:flex;
+    justify-content:center;
+    min-height:100vh;
+}
+.app{width:100%;max-width:430px;padding:10px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.team{font-weight:bold;cursor:pointer}
+.goal{
+    margin-top:8px;
+    aspect-ratio:3/2;
+    border:4px solid #fff;
+    border-radius:10px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-template-rows:repeat(2,1fr);
+    gap:5px;
+    background:#1e6f50;
+    position:relative;
+}
+.zone{
+    border:2px dashed rgba(255,255,255,.4);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:32px;
+    cursor:pointer;
+}
+.ball{
+    position:absolute;
+    font-size:26px;
+    left:50%;
+    bottom:-20px;
+    transform:translateX(-50%);
+    transition:.4s;
+}
+.center{text-align:center;margin-top:5px;min-height:24px;font-weight:bold}
+
+.overlay{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.85);
+    display:flex;justify-content:center;align-items:center;
+    z-index:10;
+}
+.box{
+    background:#123;
+    padding:20px;
+    border-radius:12px;
+    width:90%;
+    max-width:300px;
+    text-align:center;
+}
+input,button{
+    width:100%;
+    padding:10px;
+    font-size:16px;
+    margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- START / ZMIANA NAZWY -->
+<div class="overlay" id="nameOverlay">
+  <div class="box">
+    <h2>Twoja drużyna ⚽</h2>
+    <input id="nameInput" placeholder="Wpisz nazwę drużyny">
+    <button id="saveNameBtn">Zagraj</button>
+  </div>
+</div>
+
+<!-- KONIEC GRY -->
+<div class="overlay" id="endOverlay" style="display:none">
+  <div class="box">
+    <h2>Koniec gry ❌</h2>
+    <p>Wygrane mecze: <b id="finalScore"></b></p>
+    <p>Rekord: <b id="finalRecord"></b></p>
+    <button id="newGameBtn">Nowa gra 🔄</button>
+  </div>
+</div>
+
+<div class="app">
+  <div class="top">
+    <div class="team" id="teamName"></div>
+    <div>🏆 <span id="record">0</span></div>
+  </div>
+
+  <div class="center" id="match"></div>
+  <div class="center" id="turn"></div>
+  <div class="goal" id="goal"></div>
+  <div class="center" id="msg"></div>
+</div>
+
+<script>
+/* ===== ELEMENTY ===== */
+let dawid108 = localStorage.getItem("dawid108") || 0;
+const teamNameDiv = document.getElementById("teamName");
+const recordSpan = document.getElementById("record");
+const matchDiv = document.getElementById("match");
+const turnDiv = document.getElementById("turn");
+const goal = document.getElementById("goal");
+const msg = document.getElementById("msg");
+
+const nameOverlay = document.getElementById("nameOverlay");
+const endOverlay = document.getElementById("endOverlay");
+const nameInput = document.getElementById("nameInput");
+const saveNameBtn = document.getElementById("saveNameBtn");
+const newGameBtn = document.getElementById("newGameBtn");
+
+const finalScore = document.getElementById("finalScore");
+const finalRecord = document.getElementById("finalRecord");
+
+/* ===== DANE ===== */
+const teams=[
+ {name:"Barcelona",gk:"Szczęsny",st:"Lewandowski"},
+ {name:"Barcelona",gk:"Joan Garcia",st:"Raphinha"},
+ {name:"Barcelona",gk:"Joan Garcia",st:"Lamine Yamal"},
+ {name:"Real Madryt",gk:"Courtois",st:"Mbappe"},
+ {name:"Real Madryt",gk:"Courtois",st:"Vinicius"},
+ {name:"Real Madryt",gk:"Courtois",st:"Bellingham"},
+ {name:"PSG",gk:"Chevalier",st:"Dembele"},
+ {name:"Arsenal",gk:"Raya",st:"Saka"},
+ {name:"Chelsea",gk:"Sanchez",st:"Palmer"},
+ {name:"Liverpool",gk:"Alisson",st:"Salah"},
+ {name:"Manchester City",gk:"Donnarumma",st:"Haaland"},
+ {name:"Manchester United",gk:"Lammens",st:"Bruno"},
+ {name:"Tottenham",gk:"Vicario",st:"Richarlison"},
+ {name:"Atletico Madryt",gk:"Oblak",st:"Griezmann"},
+ {name:"Lech Poznań",gk:"Mrozek",st:"Ishak"},
+ {name:"AC Milan",gk:"Maignan",st:"Leao"},
+ {name:"Inter Mediolan",gk:"Sommer",st:"Martinez"},
+ {name:"Juventus",gk:"Perin",st:"Milik"},
+ {name:"Napoli",gk:"Meret",st:"Lukaku"},
+ {name:"Al Nassr",gk:"Al Aqidi",st:"Ronaldo"},
+ {name:"Inter Miami",gk:"Rios",st:"Messi"}
+];
+
+const shots=["lg","gm","pg","ld","sd","pd"];
+const defend=["L","Ś","P"];
+
+let teamName = localStorage.getItem("team");
+let record = Number(localStorage.getItem("karne")) || 0;
+
+let points=0, ps=0, es=0;
+let enemy=null;
+let mode="shoot";
+
+/* ===== START ===== */
+recordSpan.textContent = record;
+
+if(teamName){
+  nameOverlay.style.display="none";
+  startMatch();
+}else{
+  setTimeout(()=>nameInput.focus(),200);
+}
+
+/* ===== EVENTY ===== */
+teamNameDiv.onclick = ()=>{
+  nameOverlay.style.display="flex";
+  nameInput.value = teamName || "";
+  setTimeout(()=>nameInput.focus(),200);
+};
+
+saveNameBtn.onclick = ()=>{
+  teamName = nameInput.value || "Drużyna";
+  localStorage.setItem("team", teamName);
+  nameOverlay.style.display="none";
+  updateTop();
+  if(!enemy) startMatch();
+};
+
+newGameBtn.onclick = ()=>{
+  points = 0;
+  endOverlay.style.display="none";
+  startMatch();
+};
+
+/* ===== LOGIKA ===== */
+function startMatch(){
+  enemy = teams[Math.floor(Math.random()*teams.length)];
+  ps = 0; es = 0;
+  mode = "shoot";
+  updateTop();
+  nextTurn();
+}
+
+function updateTop(){
+  teamNameDiv.textContent = teamName;
+  recordSpan.textContent = record;
+  matchDiv.textContent = `${teamName} ${ps}:${es} ${enemy.name}`;
+}
+
+function nextTurn(){
+  goal.innerHTML="";
+  msg.textContent="";
+  turnDiv.textContent = mode==="shoot" ? "⚽ Teraz strzelasz" : "🧤 Teraz bronisz";
+
+  if(mode==="shoot"){
+    shots.forEach(s=>addZone("⚽",()=>shoot(s)));
+  }else{
+    defend.forEach(d=>addZone("🧤",()=>defendShot(d)));
+  }
+}
+
+function addZone(icon,fn){
+  const z=document.createElement("div");
+  z.className="zone";
+  z.textContent=icon;
+  z.onclick=fn;
+  goal.appendChild(z);
+}
+
+function shoot(choice){
+  const gk = shots[Math.floor(Math.random()*shots.length)];
+  animate(choice);
+  if(choice===gk){
+    msg.textContent = `${enemy.gk} obronił 🧤`;
+  }else{
+    msg.textContent = "Strzeliłeś ⚽";
+    ps++;
+    dawid108++;
+    localStorage.setItem("dawid108", dawid108);
+    console.log("dawid108:", dawid108);
+  }
+  mode="defend";
+  updateTop();
+  setTimeout(checkEnd,1000);
+}
+
+function defendShot(side){
+  const shot = shots[Math.floor(Math.random()*shots.length)];
+  animate(shot);
+
+  const ok =
+    (side==="L"&&(shot==="lg"||shot==="ld"))||
+    (side==="Ś"&&(shot==="gm"||shot==="sd"))||
+    (side==="P"&&(shot==="pg"||shot==="pd"));
+
+  if(ok){
+    msg.textContent="Obroniłeś 🧤";
+  }else{
+    msg.textContent=`${enemy.st} strzelił ⚽`;
+    es++;
+  }
+  mode="shoot";
+  updateTop();
+  setTimeout(checkEnd,1000);
+}
+
+function checkEnd(){
+  if(ps===3){
+    points++;
+    if(points>record){
+      record=points;
+      localStorage.setItem("karne",record);
+    }
+    startMatch();
+  }else if(es===3){
+    finalScore.textContent = points;
+    finalRecord.textContent = record;
+    endOverlay.style.display="flex";
+  }else{
+    nextTurn();
+  }
+}
+
+function animate(pos){
+  const b=document.createElement("div");
+  b.className="ball";
+  b.textContent="⚽";
+  goal.appendChild(b);
+
+  const map={
+    lg:["20%","70%"],gm:["50%","70%"],pg:["80%","70%"],
+    ld:["20%","30%"],sd:["50%","30%"],pd:["80%","30%"]
+  };
+
+  setTimeout(()=>{
+    b.style.left = map[pos][0];
+    b.style.bottom = map[pos][1];
+  },50);
+
+  setTimeout(()=>b.remove(),500);
+}
+</script>
+
+</body>
+</html>
