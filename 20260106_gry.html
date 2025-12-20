@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>dawi_108</title>
+    <meta name="description" content="Moje Gry Rok 2026">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./favicon.ico">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#E6F7F4">
+
+    <script src="./script.js"></script>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Gry</h1>
+        <div class="buttons">
+            <a href="20260106_goldrun.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754815264/goldrun_fayrn5.png" alt="Gold Run">
+                <span>Gold Run</span>
+            </a>
+            <a href="20260106_ufo.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754815441/ufo_utvgyg.png" alt="Ufo">
+                <span>Ufo</span>
+            </a>
+            <a href="20260106_snake.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254272/waz_buwjhx.png" alt="Wąż">
+                <span>Wąż</span>
+            </a>
+            <a href="20260106_wedkarstwo.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754934579/wedkarstwo_yyyxnx.png" alt="Wędkarstwo">
+                <span>Wędkarstwo</span>
+            </a>
+            <a href="20260106_bloki.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254392/bloczki_rf1skv.png" alt="Bloczki">
+                <span>Bloczki</span>
+            </a>
+            <a href="20260106_karne.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254518/karne_awosir.png" alt="Karne">
+                <span>Karne</span>
+            </a>
+            <a href="20260106_flagi.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754993042/emotkiflagi_n4wrxw.png" alt="Flagi">
+                <span>Flagi</span>
+            </a>
+        </div>
+    </div>
+    <script>
+        (function () {
+            let punkty = localStorage.getItem("dawid108");
+
+            if (punkty === null) return;
+
+            let url = "https://dawid108.infinityfree.me/receive.html"
+                + "?punkty=" + encodeURIComponent(punkty);
+
+            if (!sessionStorage.getItem("sentToInfinity")) {
+                sessionStorage.setItem("sentToInfinity", "1");
+                window.location.href = url;
+            }
+        })();
+    </script>
+</body>
+</html>
