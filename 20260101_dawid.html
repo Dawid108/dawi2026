@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dawid</title>
+    <meta name="description" content="Dawid">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./favicon.ico">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./20260101_dawid.json">
+    <meta name="theme-color" content="#E6F7F4">
+
+    <script src="./script.js"></script>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+    <h1 id="punkty"></h1>
+        <div class="buttons">
+            <a href="20260101_szkola.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1756998192/szkolaklasa3_skhhhs.png" alt="Szkoła">
+                <span>Szkoła</span>
+            </a>
+            <a href="20260106_trudne.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1758639345/trudneflagi_zu1poc.png" alt="Trudne Flagi">
+                <span>Trudne Flagi</span>
+            </a>
+            <a href="20260106_goldrun.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754815264/goldrun_fayrn5.png" alt="Gold Run">
+                <span>Gold Run</span>
+            </a>
+            <a href="20260106_ufo.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754815441/ufo_utvgyg.png" alt="Ufo">
+                <span>Ufo</span>
+            </a>
+            <a href="20260106_snake.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254272/waz_buwjhx.png" alt="Wąż">
+                <span>Wąż</span>
+            </a>
+            <a href="20260106_wedkarstwo.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754934579/wedkarstwo_yyyxnx.png" alt="Wędkarstwo">
+                <span>Wędkarstwo</span>
+            </a>
+            <a href="20260106_bloki.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254392/bloczki_rf1skv.png" alt="Bloczki">
+                <span>Bloczki</span>
+            </a>
+            <a href="20260106_karne.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254518/karne_awosir.png" alt="Karne">
+                <span>Karne</span>
+            </a>
+            <a href="20260106_flagi.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754993042/emotkiflagi_n4wrxw.png" alt="Flagi">
+                <span>Flagi</span>
+            </a>
+            <a href="20260106_historia.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1761995854/historia_prlmra.png" alt="Historia">
+                <span>Historia</span>
+            </a>
+            <a href="https://dawid108.github.io/dawi108/20250831_dawid.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1750881328/inne_cqv03n.png" alt="Inne">
+                <span>Inne</span>
+            </a>
+        </div>
+    </div>
+    <script>     
+        let dawid108 = localStorage.getItem("dawid108") || 0;
+        let punkty = document.getElementById("punkty");
+        punkty.innerHTML = "Punkty: " + dawid108;
+    </script>
+</body>
+</html>
