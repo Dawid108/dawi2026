@@ -245,9 +245,6 @@ function shoot(choice){
   }else{
     msg.textContent = "Strzeliłeś ⚽";
     ps++;
-    dawid108++;
-    localStorage.setItem("dawid108", dawid108);
-    console.log("dawid108:", dawid108);
   }
   mode="defend";
   updateTop();
@@ -277,6 +274,9 @@ function defendShot(side){
 function checkEnd(){
   if(ps===3){
     points++;
+    dawid108 += 3;
+    localStorage.setItem("dawid108", dawid108);
+    console.log("dawid108:", dawid108);
     if(points>record){
       record=points;
       localStorage.setItem("karne",record);
