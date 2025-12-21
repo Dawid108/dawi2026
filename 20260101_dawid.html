@@ -99,7 +99,64 @@
         let fishing_record = localStorage.getItem("fishing_record") || 0;
         let zabka = localStorage.getItem("zabka") || 0;
         let rekordy = document.getElementById("rekordy");
-        rekordy.innerHTML = "<table><tr><th>Gra</th><th>Rekord</th></tr><tr><td><a href="20260106_bloki.html">Bloczki</a></td><td>" + tetris + "</td></tr><tr><td><a href="20260106_flagi.html">Flagi</a></td><td>" + flaga_emotka_best + "</td></tr><tr><td><a href="20260106_goldrun.html">Gold Run</a></td><td>" + gr_best + "</td></tr><tr><td><a href="20260106_karne.html">Karne</a></td><td>" + karne + "</td></tr><tr><td><a href="20260106_halloween.html">Halloween</a></td><td>" + murek + "</td></tr><tr><td><a href="20260106_snake.html">Wąż</a></td><td>" + snake + "</td></tr><tr><td><a href="20260106_tenis.html">Tenis</a></td><td>" + tenis + "</td></tr><tr><td><a href="20260106_ufo.html">Ufo</a></td><td>" + ufo_record + "</td></tr><tr><td><a href="20260106_wedkowanie.html">Wędkowanie</a></td><td>" + fishing_record + "</td></tr><tr><td><a href="20260106_zabka.html">Żabka</a></td><td>" + zabka + "</td></tr></table>";
+rekordy.innerHTML = `
+<table>
+  <tr>
+    <th>Gra</th>
+    <th>Rekord</th>
+  </tr>
+
+  <tr>
+    <td><a href="20260106_bloki.html">Bloczki</a></td>
+    <td>${tetris}</td>
+  </tr>
+
+  <tr>
+    <td><a href="20260106_flagi.html">Flagi</a></td>
+    <td>${flaga_emotka_best}</td>
+  </tr>
+
+  <tr>
+    <td><a href="20260106_goldrun.html">Gold Run</a></td>
+    <td>${gr_best}</td>
+  </tr>
+
+  <tr>
+    <td><a href="20260106_karne.html">Karne</a></td>
+    <td>${karne}</td>
+  </tr>
+
+  <tr>
+    <td><a href="20260106_halloween.html">Halloween</a></td>
+    <td>${murek}</td>
+  </tr>
+
+  <tr>
+    <td><a href="20260106_snake.html">Wąż</a></td>
+    <td>${snake}</td>
+  </tr>
+
+  <tr>
+    <td><a href="20260106_tenis.html">Tenis</a></td>
+    <td>${tenis}</td>
+  </tr>
+
+  <tr>
+    <td><a href="20260106_ufo.html">Ufo</a></td>
+    <td>${ufo_record}</td>
+  </tr>
+
+  <tr>
+    <td><a href="20260106_wedkowanie.html">Wędkowanie</a></td>
+    <td>${fishing_record}</td>
+  </tr>
+
+  <tr>
+    <td><a href="20260106_zabka.html">Żabka</a></td>
+    <td>${zabka}</td>
+  </tr>
+</table>
+`;
     </script>
 </body>
 </html>
