@@ -158,8 +158,8 @@
     function initBall() {
         ballX = canvas.width / 2;
         ballY = canvas.height - 80;
-        ballDX = (Math.random() - 0.5) * 2; // Wolniejszy start
-        ballDY = -2; // Wolniejszy start
+        ballDX = (Math.random() - 0.5) * 4; // Wolniejszy start
+        ballDY = -4; // Wolniejszy start
         waitingForStart = true;
         gameActive = true;
     }
@@ -239,7 +239,7 @@
             score++;
             scoreVal.innerText = score;
             computerWidth = Math.min(100, computerWidth + 3);
-            computerSpeed += 0.1;
+            computerSpeed += 0.07;
             initBall();
         }
 
