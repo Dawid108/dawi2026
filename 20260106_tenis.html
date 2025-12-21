@@ -115,6 +115,7 @@
     <div class="hint">PC: Strzałki & Enter | Mobile: Dotknij boki ekranu</div>
 
 <script>
+    let dawid108 = localStorage.getItem("dawid108") || 0;
     const canvas = document.getElementById('tennisCanvas');
     const ctx = canvas.getContext('2d');
     
@@ -158,8 +159,8 @@
     function initBall() {
         ballX = canvas.width / 2;
         ballY = canvas.height - 80;
-        ballDX = (Math.random() - 0.5) * 4; // Wolniejszy start
-        ballDY = -4; // Wolniejszy start
+        ballDX = (Math.random() - 0.5) * 5; // Wolniejszy start
+        ballDY = -5; // Wolniejszy start
         waitingForStart = true;
         gameActive = true;
     }
@@ -220,7 +221,7 @@
         if (ballY < 80 && ballY > 40) {
             if (ballX > computerX && ballX < computerX + computerWidth) {
                 ballDY = Math.abs(ballDY); // Odbij w dół
-                ballDX += (Math.random() - 0.5) * 1.5;
+                ballDX += (Math.random() - 0.5) * 2;
             }
         }
 
@@ -237,9 +238,12 @@
         // Punkt dla gracza
         if (ballY < 0) {
             score++;
+            dawid108++;
+            localStorage.setItem("dawid108", dawid108);
+            console.log("dawid108:", dawid108);
             scoreVal.innerText = score;
             computerWidth = Math.min(100, computerWidth + 3);
-            computerSpeed += 0.07;
+            computerSpeed += 0.1;
             initBall();
         }
 
