@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Żabka</title>
+    <meta name="description" content="Żabka">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+
+    <script src="./script.js"></script>
+    <style>
+        :root {
+            --cell-size: 40px; /* Rozmiar jednej kratki/emotki */
+            --map-width: 9; /* Szerokość mapy w kratkach */
+        }
+
+        body {
+            background-color: #2c3e50;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none; 
+        }
+
+        /* Główny kontener gry */
+        #game-container {
+            position: relative;
+            width: calc(var(--cell-size) * var(--map-width));
+            height: calc(var(--cell-size) * 11); /* Wysokość widocznego obszaru */
+            background-color: #27ae60; /* Kolor trawy */
+            border: 4px solid #34495e;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            overflow: hidden; /* Ukrywamy to co wychodzi poza mapę */
+        }
+
+        /* Warstwa świata (to ona się przesuwa w dół) */
+        #world-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            transition: transform 0.1s ease-out; /* Płynne przesuwanie przy skoku */
+        }
+
+        /* Pojedynczy rząd */
+        .row {
+            position: absolute;
+            height: var(--cell-size);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            font-size: 28px;
+            left: 0;
+        }
+
+        .row.grass { background-color: #27ae60; }
+        .row.road { background-color: #7f8c8d; border-top: 2px dashed #95a5a6; border-bottom: 2px dashed #95a5a6; box-sizing: border-box; }
+        .row.water { background-color: #3498db; }
+
+        /* Obiekty na drodze/wodzie */
+        .moving-object {
+            position: absolute;
+            text-align: center;
+            width: var(--cell-size);
+            height: var(--cell-size);
+            line-height: var(--cell-size);
+            top: 0;
+        }
+        
+        /* Kłody są szersze */
+        .log-object {
+             width: auto;
+             white-space: nowrap;
+             letter-spacing: -5px; /* Złączenie kwadratów */
+        }
+
+        /* Żabka (zawsze na środku ekranu) */
+        #frog {
+            position: absolute;
+            width: var(--cell-size);
+            height: var(--cell-size);
+            font-size: 32px;
+            text-align: center;
+            line-height: var(--cell-size);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%); /* Idealne wyśrodkowanie */
+            z-index: 10;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* UI */
+        #score-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            z-index: 20;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        /* Ekran końca gry */
+        #game-over-modal {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 30;
+        }
+
+        h2 { color: #e74c3c; margin-bottom: 20px; font-size: 32px;}
+        .stat-box { font-size: 24px; margin: 10px 0; }
+        .highlight { color: #f1c40f; font-weight: bold; }
+
+        button {
+            margin-top: 30px;
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .hint { margin-top: 10px; color: #bdc3c7; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="score-display">Wynik: 0</div>
+        
+        <div id="world-layer">
+            </div>
+
+        <div id="frog">🐸</div>
+
+        <div id="game-over-modal">
+            <h2>Koniec Gry!</h2>
+            <div class="stat-box">Wynik: <span id="final-score" class="highlight">0</span></div>
+            <div class="stat-box">Rekord: <span id="best-score" class="highlight">0</span></div>
+            <button onclick="resetGame()">Nowa Gra 🔄</button>
+        </div>
+    </div>
+    
+    <div class="hint">Sterowanie: Spacja lub Kliknięcie na ekran</div>
+
+<script>
+    // --- Konfiguracja i Zmienne ---
+    const CELL_SIZE = 40;
+    const MAP_WIDTH_CELLS = 9;
+    const VISIBLE_ROWS = 11;
+    const MAP_WIDTH_PX = CELL_SIZE * MAP_WIDTH_CELLS;
+    const FROG_FIXED_ROW_INDEX = Math.floor(VISIBLE_ROWS / 2); // Żaba jest zawsze w środkowym rzędzie widoku
+
+    const worldLayer = document.getElementById('world-layer');
+    const scoreDisplay = document.getElementById('score-display');
+    const modal = document.getElementById('game-over-modal');
+    const finalScoreEl = document.getElementById('final-score');
+    const bestScoreEl = document.getElementById('best-score');
+
+    const CAR_EMOJIS = ['🚗', '🚕', '🚙', '🚌', '🚚'];
+    const LOG_EMOJI_SEGMENT = '🟫';
+
+    let score = 0;
+    let isGameOver = false;
+    let difficultyMultiplier = 1.0;
+    let rowsData = []; // Przechowuje dane o aktywnych rzędach
+    let worldOffset = 0; // O ile przesunęliśmy świat w dół
+
+    let lastTime = 0;
+    let animationFrameId;
+
+    // --- Silnik Gry ---
+
+    function initGame() {
+        score = 0;
+        isGameOver = false;
+        difficultyMultiplier = 1.0;
+        worldOffset = 0;
+        rowsData = [];
+        worldLayer.innerHTML = '';
+        worldLayer.style.transform = `translateY(0px)`;
+        scoreDisplay.innerText = `Wynik: ${score}`;
+        modal.style.display = 'none';
+
+        // Generujemy początkowe bezpieczne rzędy (trawa) pod i nad żabą
+        for (let i = -FROG_FIXED_ROW_INDEX; i < VISIBLE_ROWS + 2; i++) {
+            generateRow(i, true); // true = wymuś bezpieczny rząd
+        }
+
+        lastTime = performance.now();
+        gameLoop(lastTime);
+    }
+
+    function generateRow(rowIndex, forceSafe = false) {
+        const rowDiv = document.createElement('div');
+        rowDiv.classList.add('row');
+        // Ustawiamy pozycję Y rzędu na podstawie jego indeksu
+        // Indeksy rosną w dół. 0 to środek na starcie. Ujemne są wyżej.
+        rowDiv.style.top = `${(rowIndex + FROG_FIXED_ROW_INDEX) * CELL_SIZE}px`;
+
+        let rowType = 'grass';
+        let objects = [];
+        let speed = 0;
+        let direction = 1;
+
+        if (!forceSafe && rowIndex < 0) { // Generujemy przeszkody tylko przed żabą (rowIndex < 0)
+            const rand = Math.random();
+            if (rand < 0.4) rowType = 'road';
+            else if (rand < 0.75) rowType = 'water';
+        }
+
+        rowDiv.classList.add(rowType);
+
+        if (rowType !== 'grass') {
+            // Konfiguracja ruchu dla ulicy/wody
+            speed = (1.5 + Math.random() * 2) * difficultyMultiplier;
+            direction = Math.random() < 0.5 ? -1 : 1; // Losowy kierunek (lewo/prawo)
+            
+            const objectCount = rowType === 'road' ? Math.floor(Math.random() * 2) + 2 : Math.floor(Math.random() * 2) + 2; // 2-3 obiekty
+
+            for (let i = 0; i < objectCount; i++) {
+                const objDiv = document.createElement('div');
+                objDiv.classList.add('moving-object');
+                
+                let startX = (i * (MAP_WIDTH_PX / objectCount)) + (Math.random() * 50);
+                let width = CELL_SIZE;
+
+                if (rowType === 'road') {
+                    objDiv.innerText = CAR_EMOJIS[Math.floor(Math.random() * CAR_EMOJIS.length)];
+                } else {
+                    objDiv.classList.add('log-object');
+                    const logLength = Math.floor(Math.random() * 3) + 2; // Kłoda długości 2-4
+                    objDiv.innerText = LOG_EMOJI_SEGMENT.repeat(logLength);
+                    width = logLength * (CELL_SIZE * 0.8); // Przybliżona szerokość kłody
+                }
+                
+                rowDiv.appendChild(objDiv);
+                objects.push({ element: objDiv, x: startX, width: width });
+            }
+        }
+
+        worldLayer.appendChild(rowDiv);
+
+        // Zapisujemy dane rzędu
+        rowsData.push({
+            index: rowIndex,
+            element: rowDiv,
+            type: rowType,
+            objects: objects,
+            speed: speed,
+            direction: direction
+        });
+
+        // Sortujemy, żeby najniższe indeksy (te na górze ekranu) były pierwsze w tablicy
+        rowsData.sort((a, b) => a.index - b.index);
+    }
+
+
+    function gameLoop(currentTime) {
+        if (isGameOver) return;
+        
+        const deltaTime = (currentTime - lastTime) / 1000; // Czas w sekundach
+        lastTime = currentTime;
+
+        updateObjects(deltaTime);
+        checkCollisions();
+
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+
+    function updateObjects(deltaTime) {
+        rowsData.forEach(row => {
+            if (row.speed > 0) {
+                row.objects.forEach(obj => {
+                    // Przesuń obiekt
+                    obj.x += row.speed * row.direction * deltaTime * 60; // *60 dla normalizacji prędkości
+
+                    // Zawijanie (teleportacja na drugą stronę)
+                    if (row.direction === 1 && obj.x > MAP_WIDTH_PX) {
+                        obj.x = -obj.width;
+                    } else if (row.direction === -1 && obj.x < -obj.width) {
+                        obj.x = MAP_WIDTH_PX;
+                    }
+
+                    obj.element.style.left = `${obj.x}px`;
+                });
+            }
+        });
+    }
+
+    // --- Główne Sterowanie (Skok) ---
+    function moveForward() {
+        if (isGameOver) return;
+
+        score++;
+        scoreDisplay.innerText = `Wynik: ${score}`;
+        
+        // Zwiększamy trudność co 10 punktów
+        if (score % 10 === 0) {
+            difficultyMultiplier += 0.15;
+        }
+
+        // Przesuwamy świat w dół
+        worldOffset += CELL_SIZE;
+        worldLayer.style.transform = `translateY(${worldOffset}px)`;
+
+        // Usuwamy rzędy, które wyszły dołem poza ekran
+        const bottomThresholdIndex = Math.floor(score) + VISIBLE_ROWS;
+        rowsData = rowsData.filter(row => {
+            if (row.index > bottomThresholdIndex) {
+                row.element.remove();
+                return false;
+            }
+            return true;
+        });
+
+        // Generujemy nowy rząd na samej górze (poza widokiem)
+        // Najmniejszy indeks w danych to ten na samej górze. Odejmujemy 1.
+        const newTopIndex = rowsData[0].index - 1;
+        generateRow(newTopIndex);
+
+        // Sprawdzenie kolizji natychmiast po skoku (np. wskoczenie prosto pod auto)
+        checkCollisions();
+    }
+
+    // --- Detekcja Kolizji ---
+    function checkCollisions() {
+        // Żaba jest zawsze w rzędzie o indeksie: (-score)
+        const currentRowIndex = -score;
+        
+        // Znajdź rząd, na którym stoi żaba
+        const currentRow = rowsData.find(r => r.index === currentRowIndex);
+
+        if (!currentRow || currentRow.type === 'grass') return; // Na trawie bezpiecznie
+
+        // Pozycja X żaby (środek ekranu) i jej margines błędu
+        const frogCenterX = MAP_WIDTH_PX / 2;
+        const frogHitboxMargin = CELL_SIZE * 0.3; // Mniejszy hitbox dla wybaczenia błędów
+
+        if (currentRow.type === 'road') {
+            // Sprawdź czy żaba dotyka któregokolwiek auta
+            for (let car of currentRow.objects) {
+                if (isOverlapping(frogCenterX, frogHitboxMargin, car.x, car.width)) {
+                    gameOver("Potrącenie! 🚗");
+                    return;
+                }
+            }
+        } 
+        else if (currentRow.type === 'water') {
+            let onLog = false;
+            // Sprawdź czy żaba stoi na KTORIEJKOLWIEK kłodzie
+            for (let log of currentRow.objects) {
+                if (isOverlapping(frogCenterX, frogHitboxMargin, log.x, log.width)) {
+                    onLog = true;
+                    break; // Stoi na kłodzie, jest bezpieczna
+                }
+            }
+            // Jeśli jest na wodzie i NIE stoi na kłodzie -> śmierć
+            if (!onLog) {
+                gameOver("Utonięcie! 🌊");
+            }
+        }
+    }
+
+    // Pomocnicza funkcja sprawdzająca nakładanie się na osi X
+    function isOverlapping(frogCenter, frogMargin, objX, objWidth) {
+        const frogLeft = frogCenter - frogMargin;
+        const frogRight = frogCenter + frogMargin;
+        const objRight = objX + objWidth;
+        
+        // Sprawdzenie czy prostokąty na siebie nachodzą
+        return (frogLeft < objRight && frogRight > objX);
+    }
+
+
+    function gameOver(reason) {
+        isGameOver = true;
+        cancelAnimationFrame(animationFrameId);
+        
+        // Zapis rekordu
+        const savedRecord = localStorage.getItem('zabka');
+        let record = savedRecord ? parseInt(savedRecord) : 0;
+        if (score > record) {
+            record = score;
+            localStorage.setItem('zabka', record);
+        }
+
+        finalScoreEl.innerText = score;
+        bestScoreEl.innerText = record;
+        modal.style.display = 'flex';
+        // Opcjonalnie: wyświetl powód przegranej w konsoli lub dodaj element do modala
+        // console.log("Game Over: " + reason); 
+    }
+
+    function resetGame() {
+        initGame();
+    }
+
+    // --- Obsługa Wejścia ---
+    
+    // Klawiatura (Spacja)
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !isGameOver) {
+            e.preventDefault(); // Blokada przewijania strony
+            moveForward();
+        }
+    });
+
+    // Dotyk / Kliknięcie myszką
+    document.addEventListener('touchstart', handleInput, {passive: false});
+    document.addEventListener('mousedown', handleInput);
+
+    function handleInput(e) {
+        // Ignoruj kliknięcia w przycisk restartu
+        if (e.target.tagName === 'BUTTON') return;
+
+        if (!isGameOver) {
+            e.preventDefault();
+            moveForward();
+        }
+    }
+
+    // Start gry
+    initGame();
+
+</script>
+</body>
+</html>
