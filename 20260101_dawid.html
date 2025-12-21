@@ -81,82 +81,11 @@
                 <span>Inne</span>
             </a>
         </div>
-        <h1>Rekordy</h1>
-        <div id="rekordy" class="table-wrapper"></div>
     </div>
     <script>     
         let dawid108 = localStorage.getItem("dawid108") || 0;
         let punkty = document.getElementById("punkty");
         punkty.innerHTML = "Punkty: " + dawid108;
-        let tetris = localStorage.getItem("tetris") || 0;
-        let flaga_emotka_best = localStorage.getItem("flaga_emotka_best") || 0;
-        let gr_best = localStorage.getItem("gr_best") || 0;
-        let karne = localStorage.getItem("karne") || 0;
-        let murek = localStorage.getItem("murek") || 0;
-        let snake = localStorage.getItem("snake") || 0;
-        let tenis = localStorage.getItem("tenis") || 0;
-        let ufo_record = localStorage.getItem("ufo_record") || 0;
-        let fishing_record = localStorage.getItem("fishing_record") || 0;
-        let zabka = localStorage.getItem("zabka") || 0;
-        let rekordy = document.getElementById("rekordy");
-rekordy.innerHTML = `
-<table>
-  <tr>
-    <th>Gra</th>
-    <th>Rekord</th>
-  </tr>
-
-  <tr>
-    <td><a href="20260106_bloki.html">Bloczki</a></td>
-    <td>${tetris}</td>
-  </tr>
-
-  <tr>
-    <td><a href="20260106_flagi.html">Flagi</a></td>
-    <td>${flaga_emotka_best}</td>
-  </tr>
-
-  <tr>
-    <td><a href="20260106_goldrun.html">Gold Run</a></td>
-    <td>${gr_best}</td>
-  </tr>
-
-  <tr>
-    <td><a href="20260106_karne.html">Karne</a></td>
-    <td>${karne}</td>
-  </tr>
-
-  <tr>
-    <td><a href="20260106_halloween.html">Halloween</a></td>
-    <td>${murek}</td>
-  </tr>
-
-  <tr>
-    <td><a href="20260106_snake.html">Wąż</a></td>
-    <td>${snake}</td>
-  </tr>
-
-  <tr>
-    <td><a href="20260106_tenis.html">Tenis</a></td>
-    <td>${tenis}</td>
-  </tr>
-
-  <tr>
-    <td><a href="20260106_ufo.html">Ufo</a></td>
-    <td>${ufo_record}</td>
-  </tr>
-
-  <tr>
-    <td><a href="20260106_wedkowanie.html">Wędkowanie</a></td>
-    <td>${fishing_record}</td>
-  </tr>
-
-  <tr>
-    <td><a href="20260106_zabka.html">Żabka</a></td>
-    <td>${zabka}</td>
-  </tr>
-</table>
-`;
     </script>
 </body>
 </html>
