@@ -36,9 +36,17 @@
                 <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754815264/goldrun_fayrn5.png" alt="Gold Run">
                 <span>Gold Run</span>
             </a>
+            <a href="20260106_zabka.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766339973/zabka_kse8oi.png" alt="Żabka">
+                <span>Żabka</span>
+            </a>
             <a href="20260106_ufo.html" class="app-icon">
                 <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754815441/ufo_utvgyg.png" alt="Ufo">
                 <span>Ufo</span>
+            </a>
+            <a href="20260106_halloween.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766320514/halloween_dcjjsf.png" alt="Halloween">
+                <span>Halloween</span>
             </a>
             <a href="20260106_snake.html" class="app-icon">
                 <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254272/waz_buwjhx.png" alt="Wąż">
@@ -51,6 +59,10 @@
             <a href="20260106_bloki.html" class="app-icon">
                 <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254392/bloczki_rf1skv.png" alt="Bloczki">
                 <span>Bloczki</span>
+            </a>
+            <a href="20260106_tenis.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766320333/tenis_adypws.png" alt="Tenis">
+                <span>Tenis</span>
             </a>
             <a href="20260106_karne.html" class="app-icon">
                 <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254518/karne_awosir.png" alt="Karne">
@@ -69,11 +81,24 @@
                 <span>Inne</span>
             </a>
         </div>
+        <div id="rekordy" class="table-wrapper"></div>
     </div>
     <script>     
         let dawid108 = localStorage.getItem("dawid108") || 0;
         let punkty = document.getElementById("punkty");
         punkty.innerHTML = "Punkty: " + dawid108;
+        let tetris = localStorage.getItem("tetris") || 0;
+        let flaga_emotka_best = localStorage.getItem("flaga_emotka_best") || 0;
+        let gr_best = localStorage.getItem("gr_best") || 0;
+        let karne = localStorage.getItem("karne") || 0;
+        let murek = localStorage.getItem("murek") || 0;
+        let snake = localStorage.getItem("snake") || 0;
+        let tenis = localStorage.getItem("tenis") || 0;
+        let ufo_record = localStorage.getItem("ufo_record") || 0;
+        let fishing_record = localStorage.getItem("fishing_record") || 0;
+        let zabka = localStorage.getItem("zabka") || 0;
+        let rekordy = document.getElementById("rekordy");
+        rekordy.innerHTML = "<table><tr><td></td><td>" + tetris + "</td></tr><tr><td></td><td>" + flaga_emotka_best + "</td></tr><tr><td></td><td>" + gr_best + "</td></tr><tr><td></td><td>" + karne + "</td></tr><tr><td></td><td>" + murek + "</td></tr><tr><td></td><td>" + snake + "</td></tr><tr><td></td><td>" + tenis + "</td></tr><tr><td></td><td>" + ufo_record + "</td></tr><tr><td></td><td>" + fishing_record + "</td></tr><tr><td></td><td>" + zabka + "</td></tr></table>";
     </script>
 </body>
 </html>
