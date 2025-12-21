@@ -54,20 +54,43 @@
             </a>
         </div>
     </div>
-    <script>
-        (function () {
-            let punkty = localStorage.getItem("dawid108");
+<script>
+(function () {
+    let punkty = localStorage.getItem("dawid108");
 
-            if (punkty === null) return;
+    if (punkty === null) return;
 
-            let url = "https://dawid108.infinityfree.me/receive.html"
-                + "?punkty=" + encodeURIComponent(punkty);
+    // DODANE ZMIENNE
+    let tetris = localStorage.getItem("tetris") || 0;
+    let flaga_emotka_best = localStorage.getItem("flaga_emotka_best") || 0;
+    let gr_best = localStorage.getItem("gr_best") || 0;
+    let karne = localStorage.getItem("karne") || 0;
+    let murek = localStorage.getItem("murek") || 0;
+    let snake = localStorage.getItem("snake") || 0;
+    let tenis = localStorage.getItem("tenis") || 0;
+    let ufo_record = localStorage.getItem("ufo_record") || 0;
+    let fishing_record = localStorage.getItem("fishing_record") || 0;
+    let zabka = localStorage.getItem("zabka") || 0;
 
-            if (!sessionStorage.getItem("sentToInfinity")) {
-                sessionStorage.setItem("sentToInfinity", "1");
-                window.location.href = url;
-            }
-        })();
-    </script>
+    let url = "https://dawid108.infinityfree.me/receive.html"
+        + "?punkty=" + encodeURIComponent(punkty)
+        + "&tetris=" + encodeURIComponent(tetris)
+        + "&flaga_emotka_best=" + encodeURIComponent(flaga_emotka_best)
+        + "&gr_best=" + encodeURIComponent(gr_best)
+        + "&karne=" + encodeURIComponent(karne)
+        + "&murek=" + encodeURIComponent(murek)
+        + "&snake=" + encodeURIComponent(snake)
+        + "&tenis=" + encodeURIComponent(tenis)
+        + "&ufo_record=" + encodeURIComponent(ufo_record)
+        + "&fishing_record=" + encodeURIComponent(fishing_record)
+        + "&zabka=" + encodeURIComponent(zabka);
+
+    if (!sessionStorage.getItem("sentToInfinity")) {
+        sessionStorage.setItem("sentToInfinity", "1");
+        window.location.href = url;
+    }
+})();
+</script>
+
 </body>
 </html>
