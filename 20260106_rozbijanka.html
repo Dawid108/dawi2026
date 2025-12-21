@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Rozbijanka</title>
+    <meta name="description" content="Rozbijanka">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+
+    <script src="./script.js"></script>
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none; /* Blokada gestów przeglądarki */
+        }
+
+        #game-container {
+            position: relative;
+            box-shadow: 0 0 25px rgba(0,0,0,0.6);
+            border: 2px solid #444;
+            background-color: #0f0f1a;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 4px;
+        }
+
+        /* HUD - Górny pasek */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px 15px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+            pointer-events: none;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        }
+
+        /* Ekran Koniec Gry */
+        #game-over-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 10;
+        }
+
+        h2 { font-size: 32px; color: #e74c3c; margin-bottom: 20px; }
+        .stat-box { font-size: 22px; margin: 8px 0; }
+        .highlight { color: #f1c40f; font-weight: bold; }
+
+        button {
+            margin-top: 25px;
+            padding: 12px 30px;
+            font-size: 20px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 4px #27ae60;
+            transition: transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px #27ae60;
+        }
+
+        .hint {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="hud">
+            <div>❤️ <span id="lives-el">3</span></div>
+            <div>Poziom: <span id="level-el">1</span></div>
+            <div>🏆 <span id="score-el">0</span></div>
+        </div>
+
+        <div id="game-over-screen">
+            <h2>Koniec Gry!</h2>
+            <div class="stat-box">Wynik: <span id="final-score" class="highlight">0</span></div>
+            <div class="stat-box">Rekord: <span id="best-score" class="highlight">0</span></div>
+            <button onclick="restartGame()">Nowa Gra 🔄</button>
+        </div>
+    </div>
+
+    <div class="hint">PC: Strzałki ⬅️➡️ | Mobile: Dotknij lewej/prawej strony</div>
+
+<script>
+    let dawid108 = localStorage.getItem("dawid108") || 0;
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const livesEl = document.getElementById('lives-el');
+    const scoreEl = document.getElementById('score-el');
+    const levelEl = document.getElementById('level-el');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const finalScoreEl = document.getElementById('final-score');
+    const bestScoreEl = document.getElementById('best-score');
+
+    // --- Konfiguracja Gry ---
+    function resizeCanvas() {
+        // Dostosowanie do ekranu (max szerokość 400px dla wygody mobilnej)
+        const width = Math.min(window.innerWidth - 20, 400);
+        const height = Math.min(window.innerHeight - 100, 600);
+        canvas.width = width;
+        canvas.height = height;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Zmienne Stanu
+    let score = 0;
+    let lives = 3;
+    let level = 1;
+    let isGameOver = false;
+    let isPaused = false;
+
+    // Paletka
+    const paddle = {
+        width: 80,
+        height: 20,
+        x: canvas.width / 2 - 40,
+        y: canvas.height - 40,
+        speed: 7,
+        dx: 0,
+        emoji: "➖"
+    };
+
+    // Piłka
+    const ball = {
+        x: canvas.width / 2,
+        y: canvas.height - 50,
+        radius: 8,
+        speed: 4, // Prędkość bazowa
+        dx: 3,
+        dy: -3,
+        emoji: "⚽"
+    };
+
+    // Cegiełki
+    const brickConfig = {
+        rowCount: 6,
+        colCount: 5,
+        padding: 10,
+        offsetTop: 60,
+        height: 30,
+        // Szerokość obliczana dynamicznie
+        emojis: ["🍎", "🍊", "🍇", "💎", "👾", "🧱", "🍀", "🎁"]
+    };
+    
+    let bricks = [];
+
+    // Sterowanie (Input State)
+    let rightPressed = false;
+    let leftPressed = false;
+
+    // --- Funkcje Logiczne ---
+
+    function initLevels() {
+        // Oblicz szerokość cegiełki
+        brickConfig.width = (canvas.width - (brickConfig.padding * (brickConfig.colCount + 1))) / brickConfig.colCount;
+        
+        createBricksForLevel();
+    }
+
+    function createBricksForLevel() {
+        bricks = [];
+        
+        // Ile cegiełek ma być w tym poziomie? (10 na start + 1 co poziom)
+        const targetBricks = 10 + (level - 1);
+        
+        // Tworzymy siatkę dostępnych pozycji
+        let availablePositions = [];
+        for(let c=0; c<brickConfig.colCount; c++) {
+            for(let r=0; r<brickConfig.rowCount; r++) {
+                availablePositions.push({c, r});
+            }
+        }
+
+        // Losujemy pozycje dla cegiełek
+        for(let i=0; i<targetBricks; i++) {
+            if(availablePositions.length === 0) break; // Brak miejsca
+
+            const randomIndex = Math.floor(Math.random() * availablePositions.length);
+            const pos = availablePositions.splice(randomIndex, 1)[0];
+            const randomEmoji = brickConfig.emojis[Math.floor(Math.random() * brickConfig.emojis.length)];
+
+            const brickX = (pos.c * (brickConfig.width + brickConfig.padding)) + brickConfig.padding;
+            const brickY = (pos.r * (brickConfig.height + brickConfig.padding)) + brickConfig.offsetTop;
+
+            bricks.push({ 
+                x: brickX, 
+                y: brickY, 
+                status: 1, 
+                emoji: randomEmoji 
+            });
+        }
+    }
+
+    function drawPaddle() {
+        // Rysujemy "minus" jako tekst, ale skalujemy go, żeby pasował do szerokości paletki
+        ctx.font = `bold ${paddle.width}px Arial`; // Duży font, żeby myślnik był szeroki
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#ecf0f1";
+        
+        // Rysujemy paletkę. Uwaga: emoji ➖ jest specyficzna, więc centrujemy ją w hitboxie
+        // Używamy clip() albo rysujemy prostokąt pomocniczy jeśli emoji jest za mała, 
+        // ale "Heavy Minus Sign" ➖ jest zazwyczaj krótki.
+        // Zamiast jednego, narysujmy 3 obok siebie dla efektu długiej belki
+        
+        const segmentSize = paddle.width / 2;
+        ctx.font = "30px Arial";
+        ctx.fillText("➖", paddle.x + paddle.width*0.2, paddle.y + paddle.height/2);
+        ctx.fillText("➖", paddle.x + paddle.width*0.5, paddle.y + paddle.height/2);
+        ctx.fillText("➖", paddle.x + paddle.width*0.8, paddle.y + paddle.height/2);
+
+        // Opcjonalnie: Debug hitbox (odkomentuj żeby widzieć gdzie jest kolizja)
+        // ctx.strokeStyle = "red"; ctx.strokeRect(paddle.x, paddle.y, paddle.width, paddle.height);
+    }
+
+    function drawBall() {
+        ctx.beginPath();
+        ctx.font = "20px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(ball.emoji, ball.x, ball.y);
+        ctx.closePath();
+    }
+
+    function drawBricks() {
+        ctx.font = "24px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        
+        bricks.forEach(b => {
+            if(b.status === 1) {
+                // Rysujemy emotkę na środku pola cegiełki
+                ctx.fillText(b.emoji, b.x + brickConfig.width/2, b.y + brickConfig.height/2);
+                
+                // Opcjonalnie: obramowanie cegiełki
+                // ctx.strokeStyle = "rgba(255,255,255,0.1)";
+                // ctx.strokeRect(b.x, b.y, brickConfig.width, brickConfig.height);
+            }
+        });
+    }
+
+    function collisionDetection() {
+        // Cegiełki
+        let activeBricks = 0;
+        
+        for(let i=0; i<bricks.length; i++) {
+            let b = bricks[i];
+            if(b.status === 1) {
+                activeBricks++;
+                // Prosta kolizja AABB (Ball vs Rect)
+                // Piłka jest punktem (ball.x, ball.y) dla uproszczenia przy emotkach
+                if(ball.x > b.x && ball.x < b.x + brickConfig.width && 
+                   ball.y > b.y && ball.y < b.y + brickConfig.height) {
+                    
+                    ball.dy = -ball.dy; // Odbicie
+                    b.status = 0; // Zniszczenie
+                    score++;
+                    scoreEl.innerText = score;
+                }
+            }
+        }
+
+        // Sprawdzenie wygranej poziomu
+        if(activeBricks === 0) {
+            nextLevel();
+        }
+    }
+
+    function nextLevel() {
+        level++;
+        dawid108++;
+        dawid108++;
+        dawid108++;
+        dawid108++;
+        dawid108++;
+        localStorage.setItem("dawid108", dawid108);
+        console.log("dawid108:", dawid108);
+        levelEl.innerText = level;
+        
+        // Zwiększamy trudność
+        ball.speed += 0.5;
+        
+        // Reset piłki
+        resetBall();
+        
+        // Nowe cegiełki
+        createBricksForLevel();
+    }
+
+    function resetBall() {
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height - 40;
+        // Losowy start w lewo lub prawo, ale zawsze do góry
+        ball.dx = (Math.random() < 0.5 ? -1 : 1) * ball.speed * 0.7; 
+        ball.dy = -ball.speed;
+        
+        // Reset paletki
+        paddle.x = (canvas.width - paddle.width) / 2;
+    }
+
+    function update() {
+        if(isGameOver) return;
+
+        // Ruch Paletki
+        if (rightPressed && paddle.x < canvas.width - paddle.width) {
+            paddle.x += paddle.speed;
+        } else if (leftPressed && paddle.x > 0) {
+            paddle.x -= paddle.speed;
+        }
+
+        // Ruch Piłki
+        ball.x += ball.dx;
+        ball.y += ball.dy;
+
+        // Kolizja ze ścianami (Prawo/Lewo)
+        if(ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+            ball.dx = -ball.dx;
+        }
+        // Kolizja z sufitem
+        if(ball.y - ball.radius < 0) {
+            ball.dy = -ball.dy;
+        }
+        
+        // Kolizja z Paletką
+        // Sprawdzamy czy piłka jest na wysokości paletki
+        if(ball.y + ball.radius > paddle.y && 
+           ball.y - ball.radius < paddle.y + paddle.height &&
+           ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
+            
+            // Odbicie w górę
+            ball.dy = -Math.abs(ball.speed); // Zawsze w górę z aktualną prędkością
+            
+            // Fizyka kątowa: Zmiana kąta zależnie od miejsca uderzenia w paletkę
+            // Obliczamy punkt uderzenia (-1 to lewa krawędź, 1 to prawa, 0 to środek)
+            let collidePoint = ball.x - (paddle.x + paddle.width/2);
+            collidePoint = collidePoint / (paddle.width/2);
+            
+            // Modyfikacja DX
+            ball.dx = collidePoint * (ball.speed * 1.2); 
+        }
+
+        // Śmierć (Upadek na dół)
+        if(ball.y + ball.radius > canvas.height) {
+            lives--;
+            livesEl.innerText = lives;
+            if(!lives) {
+                gameOver();
+            } else {
+                resetBall();
+            }
+        }
+
+        collisionDetection();
+    }
+
+    function draw() {
+        // Czyszczenie ekranu
+        ctx.fillStyle = "#0f0f1a";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        drawBricks();
+        drawPaddle();
+        drawBall();
+
+        if(!isGameOver) {
+            update();
+            requestAnimationFrame(draw);
+        }
+    }
+
+    function gameOver() {
+        isGameOver = true;
+        
+        // Obsługa Rekordu
+        let record = localStorage.getItem('murek') || 0;
+        if(score > record) {
+            record = score;
+            localStorage.setItem('murek', record);
+        }
+
+        finalScoreEl.innerText = score;
+        bestScoreEl.innerText = record;
+        gameOverScreen.style.display = 'flex';
+    }
+
+    function restartGame() {
+        isGameOver = false;
+        gameOverScreen.style.display = 'none';
+        
+        score = 0;
+        lives = 3;
+        level = 1;
+        ball.speed = 4;
+        
+        scoreEl.innerText = score;
+        livesEl.innerText = lives;
+        levelEl.innerText = level;
+
+        initLevels();
+        resetBall();
+        draw();
+    }
+
+    // --- Obsługa Sterowania ---
+    
+    // Klawiatura
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+
+    function keyDownHandler(e) {
+        if(e.key === "Right" || e.key === "ArrowRight") rightPressed = true;
+        else if(e.key === "Left" || e.key === "ArrowLeft") leftPressed = true;
+    }
+
+    function keyUpHandler(e) {
+        if(e.key === "Right" || e.key === "ArrowRight") rightPressed = false;
+        else if(e.key === "Left" || e.key === "ArrowLeft") leftPressed = false;
+    }
+
+    // Dotyk (Mobile) - Lewa/Prawa strona ekranu
+    canvas.addEventListener('touchstart', handleTouch, {passive: false});
+    canvas.addEventListener('touchend', endTouch, {passive: false});
+
+    function handleTouch(e) {
+        e.preventDefault();
+        const touchX = e.touches[0].clientX;
+        const halfWidth = window.innerWidth / 2;
+
+        if(touchX < halfWidth) {
+            leftPressed = true;
+            rightPressed = false;
+        } else {
+            leftPressed = false;
+            rightPressed = true;
+        }
+    }
+
+    function endTouch(e) {
+        e.preventDefault();
+        leftPressed = false;
+        rightPressed = false;
+    }
+
+    // Start gry
+    initLevels();
+    resetBall();
+    draw();
+
+</script>
+</body>
+</html>
