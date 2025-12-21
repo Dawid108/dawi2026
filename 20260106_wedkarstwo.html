@@ -8,7 +8,7 @@
     <meta name="description" content="Wędkarstwo">
     <meta name="author" content="Dawid Gustowski">
 
-    <link rel="icon" href="./favicon.ico">
+    <link rel="icon" href="./icon-512.png">
     <link rel="apple-touch-icon" href="./icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Dawid">
@@ -131,7 +131,7 @@
       gameEl.appendChild(el);
       const fromLeft = Math.random() < 0.5;
       const y = rand(8,48);
-      const speed = rand(0.03,0.08);
+      const speed = rand(0.1,0.2);
       const obj = {el, dir: fromLeft?1:-1, x: fromLeft? -10 : 110, y, speed, emoji};
       el.style.top = y + 'vh';
       el.style.left = obj.x + '%';
@@ -223,7 +223,7 @@
     function loop(){
       if(!running) return;
       fishes.forEach(f=>{
-        f.x += f.dir * f.speed * 2;
+        f.x += f.dir * f.speed * 3;
         f.el.style.left = f.x + '%';
         if(f.dir===1 && f.x > 110) { f.x = -12; f.y = rand(8,48); f.el.style.top = f.y + 'vh'; }
         if(f.dir===-1 && f.x < -15){ f.x = 112; f.y = rand(8,48); f.el.style.top = f.y + 'vh'; }
