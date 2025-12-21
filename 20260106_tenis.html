@@ -138,7 +138,7 @@
 
     // Paletki
     let playerWidth = 100;
-    let computerWidth = 60;
+    let computerWidth = 80;
     let playerX = (canvas.width - playerWidth) / 2;
     let computerX = (canvas.width - computerWidth) / 2;
     
@@ -221,7 +221,7 @@
         if (ballY < 80 && ballY > 40) {
             if (ballX > computerX && ballX < computerX + computerWidth) {
                 ballDY = Math.abs(ballDY); // Odbij w dół
-                ballDX += (Math.random() - 0.5) * 3;
+                ballDX += (Math.random() - 0.5) * 4;
             }
         }
 
@@ -302,7 +302,7 @@
     function resetGame() {
         score = 0;
         lives = 3;
-        computerWidth = 60;
+        computerWidth = 80;
         computerSpeed = 5;
         scoreVal.innerText = score;
         livesVal.innerText = lives;
