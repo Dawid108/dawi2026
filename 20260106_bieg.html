@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Bieg</title>
+    <meta name="description" content="Bieg">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#7ec8ff">
+
+    <script src="./script.js"></script>
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    touch-action: none;
+    background: linear-gradient(#7ec8ff, #e6f7ff 65%, #6bdc7c);
+}
+
+#game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#player {
+    position: absolute;
+    bottom: 70px;
+    font-size: 48px;
+    transition: left 0.1s;
+}
+
+.obstacle {
+    position: absolute;
+    font-size: 42px;
+}
+
+#score {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-size: 20px;
+    background: rgba(255,255,255,0.7);
+    padding: 6px 12px;
+    border-radius: 12px;
+}
+
+/* GAME OVER */
+#gameOver {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(0,0,0,0.7), rgba(0,0,0,0.9));
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+#gameOverBox {
+    background: linear-gradient(#ffffff, #eaeaea);
+    padding: 40px 50px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    animation: pop 0.4s ease-out;
+}
+
+@keyframes pop {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+#gameOverBox h1 {
+    margin: 0 0 15px;
+    font-size: 36px;
+}
+
+#gameOverBox .result {
+    font-size: 20px;
+    margin: 6px 0;
+}
+
+#gameOverBox button {
+    margin-top: 20px;
+    padding: 12px 26px;
+    font-size: 18px;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    background: #4caf50;
+    color: white;
+    transition: transform 0.15s, background 0.15s;
+}
+
+#gameOverBox button:hover {
+    transform: scale(1.08);
+    background: #43a047;
+}
+</style>
+</head>
+<body>
+
+<div id="game">
+    <div id="score">Punkty: 0</div>
+    <div id="player">🏃‍♂️</div>
+
+    <div id="gameOver">
+        <div id="gameOverBox">
+            <h1>💀 KONIEC GRY</h1>
+            <div id="finalScore" class="result"></div>
+            <div id="recordScore" class="result"></div>
+            <button onclick="startGame()">Nowa Gra</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let dawid108 = localStorage.getItem("dawid108") || 0;
+const game = document.getElementById("game");
+const player = document.getElementById("player");
+const scoreEl = document.getElementById("score");
+const gameOverEl = document.getElementById("gameOver");
+const finalScoreEl = document.getElementById("finalScore");
+const recordScoreEl = document.getElementById("recordScore");
+
+let width = innerWidth;
+let height = innerHeight;
+
+const lanes = 5;
+const ground = 70;
+const obstacleEmojis = ["🚧", "🪨", "🌵", "🔥"];
+
+let laneIndex, playerX;
+let playerY = 0, velocityY = 0;
+let jumping = false;
+
+let obstacles = [];
+let speed, spawnDelay, score, running;
+let lastSpawn = 0, lastTime = performance.now();
+
+function maxObstacles() {
+    if (score >= 80) return 4;
+    if (score >= 40) return 3;
+    if (score >= 20) return 2;
+    return 1;
+}
+
+function startGame() {
+    gameOverEl.style.display = "none";
+    obstacles.forEach(o => o.el.remove());
+    obstacles = [];
+
+    score = 0;
+    speed = 3;
+    spawnDelay = 1400;
+    running = true;
+
+    laneIndex = Math.floor(lanes / 2);
+    updatePlayerX();
+
+    playerY = 0;
+    velocityY = 0;
+    jumping = false;
+    player.style.bottom = ground + "px";
+
+    scoreEl.textContent = "Punkty: 0";
+    lastSpawn = performance.now();
+    requestAnimationFrame(loop);
+}
+
+function updatePlayerX() {
+    const laneWidth = width / lanes;
+    playerX = laneWidth * laneIndex + laneWidth / 2 - 24;
+    player.style.left = playerX + "px";
+}
+
+function jump() {
+    if (!jumping) {
+        velocityY = 18;
+        jumping = true;
+    }
+}
+
+function spawnObstacle() {
+    if (obstacles.length >= maxObstacles()) return;
+
+    const el = document.createElement("div");
+    el.className = "obstacle";
+    el.textContent = obstacleEmojis[Math.floor(Math.random() * obstacleEmojis.length)];
+
+    const lane = Math.floor(Math.random() * lanes);
+    const laneWidth = width / lanes;
+    const x = laneWidth * lane + laneWidth / 2 - 21;
+
+    el.style.left = x + "px";
+    el.style.top = "-60px";
+    game.appendChild(el);
+
+    obstacles.push({ el, x, y: -60, passed: false });
+}
+
+function loop(time) {
+    if (!running) return;
+
+    if (jumping) {
+        playerY += velocityY;
+        velocityY -= 1.2;
+        if (playerY <= 0) {
+            playerY = 0;
+            jumping = false;
+        }
+        player.style.bottom = ground + playerY + "px";
+    }
+
+    obstacles.forEach(o => {
+        o.y += speed;
+        o.el.style.top = o.y + "px";
+
+        if (!o.passed && o.y > height) {
+            o.passed = true;
+            score++;
+            dawid108++;
+            localStorage.setItem("dawid108", dawid108);
+            console.log("dawid108:", dawid108);
+            scoreEl.textContent = "Punkty: " + score;
+            speed += 0.15;
+            spawnDelay = Math.max(500, spawnDelay - 40);
+        }
+
+        if (
+            Math.abs(playerX - o.x) < 30 &&
+            o.y + 40 > height - ground - playerY - 40 &&
+            o.y < height - ground
+        ) {
+            endGame();
+        }
+    });
+
+    obstacles = obstacles.filter(o => {
+        if (o.y > height + 80) {
+            o.el.remove();
+            return false;
+        }
+        return true;
+    });
+
+    if (time - lastSpawn > spawnDelay) {
+        spawnObstacle();
+        lastSpawn = time;
+    }
+
+    requestAnimationFrame(loop);
+}
+
+function endGame() {
+    running = false;
+    let record = Number(localStorage.getItem("biegacz")) || 0;
+    if (score > record) {
+        record = score;
+        localStorage.setItem("biegacz", record);
+    }
+    finalScoreEl.textContent = "Wynik: " + score;
+    recordScoreEl.textContent = "Rekord: " + record;
+    gameOverEl.style.display = "flex";
+}
+
+/* INPUT */
+document.addEventListener("keydown", e => {
+    if (!running) return;
+    if (e.key === "ArrowLeft" && laneIndex > 0) { laneIndex--; updatePlayerX(); }
+    if (e.key === "ArrowRight" && laneIndex < lanes - 1) { laneIndex++; updatePlayerX(); }
+    if (e.key === "ArrowUp") jump();
+});
+
+let sx=0, sy=0;
+document.addEventListener("touchstart", e => {
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+});
+document.addEventListener("touchend", e => {
+    if (!running) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 30 && laneIndex < lanes-1) laneIndex++;
+        if (dx < -30 && laneIndex > 0) laneIndex--;
+        updatePlayerX();
+    } else if (dy < -30) jump();
+});
+
+window.addEventListener("resize", () => {
+    width = innerWidth;
+    height = innerHeight;
+    updatePlayerX();
+});
+
+startGame();
+</script>
+
+</body>
+</html>
