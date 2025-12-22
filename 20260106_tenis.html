@@ -159,7 +159,7 @@
     function initBall() {
         ballX = canvas.width / 2;
         ballY = canvas.height - 80;
-        ballDX = (Math.random() - 0.5) * 6; // Wolniejszy start
+        ballDX = (Math.random() - 0.5) * 8; // Wolniejszy start
         ballDY = -6; // Wolniejszy start
         waitingForStart = true;
         gameActive = true;
@@ -221,7 +221,7 @@
         if (ballY < 80 && ballY > 40) {
             if (ballX > computerX && ballX < computerX + computerWidth) {
                 ballDY = Math.abs(ballDY); // Odbij w dół
-                ballDX += (Math.random() - 0.5) * 6;
+                ballDX += (Math.random() - 0.5) * 10;
             }
         }
 
