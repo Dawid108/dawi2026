@@ -118,6 +118,7 @@
     <div class="hint">PC: Strzałki ⬅️➡️ | Mobile: Przesuwaj palcem</div>
 
 <script>
+    let dawid108 = localStorage.getItem("dawid108") || 0;
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score-el');
@@ -248,6 +249,9 @@
 
     function increaseScore() {
         score++;
+        dawid108++;
+        localStorage.setItem("dawid108", dawid108);
+        console.log("dawid108:", dawid108);
         scoreEl.innerText = score;
 
         // Zwiększanie trudności co 10 punktów
