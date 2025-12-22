@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dinozaur</title>
+    <meta name="description" content="Dinozaur">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#f7f1e3">
+
+    <script src="./script.js"></script>
+    <style>
+        body {
+            background-color: #f7f1e3; /* Kolor pustyni */
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            border-bottom: 4px solid #596275;
+            overflow: hidden;
+            background-color: transparent;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* Punktacja w trakcie gry */
+        #score-hud {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #596275;
+            pointer-events: none;
+        }
+
+        /* Ekran końca gry */
+        #game-over-modal {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 10;
+        }
+
+        h2 { font-size: 32px; color: #e74c3c; margin-bottom: 10px; text-transform: uppercase; }
+        .stat-box { font-size: 24px; margin: 5px 0; color: #2c3e50; }
+        .highlight { font-weight: bold; color: #27ae60; }
+
+        button {
+            margin-top: 25px;
+            padding: 15px 40px;
+            font-size: 20px;
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px #d35400;
+            font-weight: bold;
+            transition: transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px #d35400;
+        }
+
+        .hint {
+            margin-top: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="score-hud">0</div>
+
+        <div id="game-over-modal">
+            <h2>Koniec Gry! 🌵</h2>
+            <div class="stat-box">Wynik: <span id="final-score" class="highlight">0</span></div>
+            <div class="stat-box">Rekord: <span id="best-score" class="highlight">0</span></div>
+            <button onclick="resetGame()">Nowa Gra 🔄</button>
+        </div>
+    </div>
+
+    <div class="hint">PC: Spacja | Mobile: Dotknij ekranu</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreHud = document.getElementById('score-hud');
+    const modal = document.getElementById('game-over-modal');
+    const finalScoreEl = document.getElementById('final-score');
+    const bestScoreEl = document.getElementById('best-score');
+
+    // --- Konfiguracja ---
+    let GAME_WIDTH = 600;
+    let GAME_HEIGHT = 200;
+    
+    // Zmienne stanu gry
+    let score = 0;
+    let gameSpeed = 5;
+    let isGameOver = false;
+    let animationId;
+    let spawnTimer = 0;
+
+    // Dinozaur
+    const dino = {
+        x: 50,
+        y: 0, // Zostanie ustawione w resize
+        width: 40,
+        height: 40,
+        dy: 0,
+        jumpPower: 11,
+        originalGravity: 0.6,
+        gravity: 0.6,
+        grounded: false,
+        emoji: "🦖"
+    };
+
+    // Przeszkody
+    let obstacles = [];
+    const CACTUS_EMOJI = "🌵";
+
+    function resizeCanvas() {
+        // Responsywność: max szerokość 600px, wysokość 200px
+        const winWidth = Math.min(window.innerWidth - 20, 600);
+        canvas.width = winWidth;
+        canvas.height = 200;
+        GAME_WIDTH = canvas.width;
+        GAME_HEIGHT = canvas.height;
+
+        // Ustawienie podłogi
+        dino.groundY = GAME_HEIGHT - 50;
+        dino.y = dino.groundY;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // --- Logika Gry ---
+
+    function spawnObstacle() {
+        // Losowy odstęp między kaktusami (od 60 do 140 klatek)
+        // Im szybciej biegnie (gameSpeed), tym rzadziej w czasie (ale podobnie w odległości) powinny się pojawiać
+        if (spawnTimer <= 0) {
+            const obstacle = {
+                x: GAME_WIDTH,
+                y: dino.groundY + 5, // Lekka korekta, żeby stał na ziemi
+                width: 30,
+                height: 40,
+                passed: false // Czy został już zaliczony punkt?
+            };
+            obstacles.push(obstacle);
+
+            // Reset licznika do następnego spawnu
+            // Formuła zapewnia, że kaktusy nie są niemożliwe do przeskoczenia
+            spawnTimer = Math.floor(Math.random() * 40) + 50 + (300 / gameSpeed); 
+        } else {
+            spawnTimer--;
+        }
+    }
+
+    function update() {
+        if (isGameOver) return;
+
+        // 1. Fizyka Dinozaura
+        if (!dino.grounded) {
+            dino.dy += dino.gravity;
+            dino.y += dino.dy;
+        }
+
+        // Kolizja z podłogą
+        if (dino.y > dino.groundY) {
+            dino.y = dino.groundY;
+            dino.dy = 0;
+            dino.grounded = true;
+        }
+
+        // 2. Obsługa Przeszkód
+        spawnObstacle();
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            let obs = obstacles[i];
+            obs.x -= gameSpeed;
+
+            // Zliczanie punktów (gdy kaktus minie środek dinozaura)
+            if (!obs.passed && obs.x + obs.width < dino.x) {
+                score++;
+                obs.passed = true;
+                scoreHud.innerText = score;
+                
+                // Przyspieszanie gry co 5 punktów
+                if (score % 5 === 0) {
+                    gameSpeed += 0.5;
+                }
+            }
+
+            // Usuwanie kaktusów poza ekranem
+            if (obs.x + obs.width < 0) {
+                obstacles.splice(i, 1);
+            }
+
+            // Wykrywanie Kolizji (Hitbox)
+            // Margines błędu (hitbox padding), żeby gra była przyjemniejsza
+            const padding = 10; 
+            if (
+                dino.x < obs.x + obs.width - padding &&
+                dino.x + dino.width - padding > obs.x &&
+                dino.y < obs.y + obs.height - padding &&
+                dino.y + dino.height - padding > obs.y
+            ) {
+                gameOver();
+            }
+        }
+    }
+
+    function draw() {
+        // Czyszczenie
+        ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+        // Linia podłogi
+        ctx.beginPath();
+        ctx.moveTo(0, GAME_HEIGHT - 10);
+        ctx.lineTo(GAME_WIDTH, GAME_HEIGHT - 10);
+        ctx.strokeStyle = "#596275";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Rysowanie Dinozaura
+        ctx.font = "40px Arial";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top"; // Rysujemy od lewego górnego rogu hitboxa
+        // Emoji mają często pustą przestrzeń na górze, korygujemy Y o -5
+        ctx.fillText(dino.emoji, dino.x, dino.y - 5);
+
+        // Rysowanie Kaktusów
+        ctx.font = "35px Arial";
+        obstacles.forEach(obs => {
+            ctx.fillText(CACTUS_EMOJI, obs.x, obs.y - 5);
+        });
+        
+        // Debug Hitbox (odkomentuj żeby widzieć kwadraty)
+        // ctx.strokeStyle = "red"; ctx.strokeRect(dino.x, dino.y, dino.width, dino.height);
+    }
+
+    function loop() {
+        if (!isGameOver) {
+            update();
+            draw();
+            animationId = requestAnimationFrame(loop);
+        }
+    }
+
+    function jump() {
+        if (dino.grounded && !isGameOver) {
+            dino.dy = -dino.jumpPower;
+            dino.grounded = false;
+        }
+    }
+
+    // --- Obsługa Stanu Gry ---
+
+    function gameOver() {
+        isGameOver = true;
+        cancelAnimationFrame(animationId);
+
+        // Zapis Rekordu
+        let record = localStorage.getItem('dinozaur') || 0;
+        if (score > record) {
+            record = score;
+            localStorage.setItem('dinozaur', record);
+        }
+
+        finalScoreEl.innerText = score;
+        bestScoreEl.innerText = record;
+        modal.style.display = 'flex';
+    }
+
+    function resetGame() {
+        isGameOver = false;
+        score = 0;
+        gameSpeed = 5;
+        scoreHud.innerText = "0";
+        obstacles = [];
+        spawnTimer = 0;
+        
+        dino.y = dino.groundY;
+        dino.dy = 0;
+        dino.grounded = true;
+
+        modal.style.display = 'none';
+        loop();
+    }
+
+    // --- Sterowanie ---
+
+    // PC: Spacja
+    document.addEventListener('keydown', (e) => {
+        if (e.code === "Space") {
+            // Jeśli gra się skończyła, spacja restartuje (opcjonalnie)
+            if (isGameOver && modal.style.display === 'flex') {
+                resetGame();
+            } else {
+                jump();
+            }
+            e.preventDefault(); // Zapobiega przewijaniu strony
+        }
+    });
+
+    // Mobile / Mysz: Kliknięcie
+    document.addEventListener('touchstart', (e) => {
+        if (e.target.tagName !== 'BUTTON') { // Ignoruj przycisk restartu
+            e.preventDefault(); // Zapobiega zoomowaniu/przesuwaniu
+            jump();
+        }
+    }, { passive: false });
+    
+    document.addEventListener('mousedown', (e) => {
+        if (e.target.tagName !== 'BUTTON') {
+            jump();
+        }
+    });
+
+    // Start gry
+    resetGame();
+
+</script>
+</body>
+</html>
