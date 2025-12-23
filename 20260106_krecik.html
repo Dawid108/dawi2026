@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Krecik</title>
+    <meta name="description" content="Krecik">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#8da25d">
+
+    <script src="./script.js"></script>
+    <style>
+        body {
+            background-color: #8da25d; /* Kolor trawy */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        h1 {
+            color: #fff;
+            text-shadow: 2px 2px 0 #3e4a2a;
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+
+        /* HUD - Czas i Wynik */
+        .hud {
+            display: flex;
+            gap: 20px;
+            font-size: 24px;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px 20px;
+            border-radius: 15px;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        /* Siatka gry - 6 dziur (3x2 lub 2x3 zależnie od ekranu) */
+        .game-grid {
+            display: flex;
+            flex-wrap: wrap;
+            width: 600px;
+            height: 400px;
+            justify-content: center;
+        }
+
+        .hole {
+            flex: 1 0 30%; /* 3 kolumny */
+            height: 150px;
+            position: relative;
+            overflow: hidden; /* Ukrywa krecika gdy jest "pod ziemią" */
+            margin: 10px;
+        }
+
+        /* Wygląd dziury (ziemia) */
+        .hole::after {
+            content: '';
+            display: block;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><ellipse cx="50" cy="25" rx="40" ry="15" fill="%233e2723" /></svg>') no-repeat bottom center;
+            background-size: contain;
+            width: 100%;
+            height: 70px;
+            position: absolute;
+            bottom: -10px;
+            z-index: 2; /* Ziemia jest PRZED krecikiem */
+            pointer-events: none;
+        }
+
+        /* Krecik */
+        .mole {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 100%; /* Domyślnie schowany pod dziurą */
+            text-align: center;
+            font-size: 80px;
+            line-height: 150px; /* Wyśrodkowanie w pionie */
+            cursor: pointer;
+            transition: top 0.1s ease-out; /* Animacja wyskakiwania */
+            z-index: 1;
+        }
+
+        /* Klasa dodawana przez JS, gdy krecik wychodzi */
+        .hole.up .mole {
+            top: 0;
+        }
+
+        /* Kursor młotka (opcjonalny bajer) */
+        body:active .game-grid {
+            cursor: grabbing;
+        }
+        
+        /* Modal Końca Gry */
+        #game-over-modal {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 10;
+            color: white;
+        }
+
+        h2 { font-size: 36px; color: #f1c40f; margin-bottom: 20px; }
+        .stat-box { font-size: 26px; margin: 10px 0; }
+        .highlight { color: #2ecc71; font-weight: bold; }
+
+        button {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 22px;
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 5px #d35400;
+        }
+        button:active { transform: translateY(2px); box-shadow: 0 2px #d35400; }
+
+        /* Responsywność dla telefonów */
+        @media (max-width: 600px) {
+            .game-grid { width: 95%; height: auto; }
+            .hole { height: 110px; flex: 1 0 45%; /* 2 kolumny na mobile */ }
+            .mole { font-size: 60px; line-height: 110px; }
+            .hole::after { height: 50px; bottom: -5px; }
+            h1 { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Emoji Whack-a-Mole 🔨</h1>
+
+    <div class="hud">
+        <div>Czas: <span id="time-display">30</span>s</div>
+        <div>Wynik: <span id="score-display">0</span></div>
+    </div>
+
+    <div class="game-grid">
+        <div class="hole" id="hole1"><div class="mole">🐹</div></div>
+        <div class="hole" id="hole2"><div class="mole">🐹</div></div>
+        <div class="hole" id="hole3"><div class="mole">🐹</div></div>
+        <div class="hole" id="hole4"><div class="mole">🐹</div></div>
+        <div class="hole" id="hole5"><div class="mole">🐹</div></div>
+        <div class="hole" id="hole6"><div class="mole">🐹</div></div>
+    </div>
+
+    <div id="game-over-modal">
+        <h2>Czas minął!</h2>
+        <div class="stat-box">Wynik: <span id="final-score" class="highlight">0</span></div>
+        <div class="stat-box">Rekord: <span id="best-score" class="highlight">0</span></div>
+        <button onclick="startGame()">Nowa Gra 🔄</button>
+    </div>
+
+<script>
+    // --- Elementy DOM ---
+    const holes = document.querySelectorAll('.hole');
+    const moles = document.querySelectorAll('.mole');
+    const scoreDisplay = document.getElementById('score-display');
+    const timeDisplay = document.getElementById('time-display');
+    const modal = document.getElementById('game-over-modal');
+    const finalScoreEl = document.getElementById('final-score');
+    const bestScoreEl = document.getElementById('best-score');
+
+    // --- Zmienne Gry ---
+    let lastHole;
+    let timeUp = false;
+    let score = 0;
+    let timeLeft = 30;
+    let gameTimerInterval;
+    let moleTimeout; // Przechowuje ID timeoutu dla chowania krecika
+
+    // --- Logika Gry ---
+
+    // Losowy czas przebywania krecika na powierzchni (jeśli nikt go nie kliknie)
+    function randomTime(min, max) {
+        return Math.round(Math.random() * (max - min) + min);
+    }
+
+    // Wybór losowej dziury (żeby nie ta sama 2 razy pod rząd)
+    function randomHole(holes) {
+        const idx = Math.floor(Math.random() * holes.length);
+        const hole = holes[idx];
+        if (hole === lastHole) {
+            return randomHole(holes);
+        }
+        lastHole = hole;
+        return hole;
+    }
+
+    // Funkcja pokazująca krecika
+    function peep() {
+        if (timeUp) return;
+
+        const time = randomTime(600, 1200); // Krecik siedzi od 0.6s do 1.2s
+        const hole = randomHole(holes);
+        
+        hole.classList.add('up');
+
+        // Jeśli gracz NIE kliknie, krecik chowa się sam i wychodzi inny
+        moleTimeout = setTimeout(() => {
+            hole.classList.remove('up');
+            if (!timeUp) peep();
+        }, time);
+    }
+
+    // Rozpoczęcie gry
+    function startGame() {
+        // Reset zmiennych
+        scoreDisplay.textContent = 0;
+        timeDisplay.textContent = 30;
+        score = 0;
+        timeLeft = 30;
+        timeUp = false;
+        modal.style.display = 'none';
+
+        // Wyczyszczenie aktywnych krecików (jeśli jakieś zostały)
+        holes.forEach(hole => hole.classList.remove('up'));
+        
+        // Start pętli krecików
+        peep();
+
+        // Start odliczania czasu
+        gameTimerInterval = setInterval(() => {
+            timeLeft--;
+            timeDisplay.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }, 1000);
+    }
+
+    // Obsługa kliknięcia (Uderzenie)
+    function bonk(e) {
+        // 'isTrusted' zabezpiecza przed symulowanymi kliknięciami przez skrypty
+        if (!e.isTrusted) return; 
+        
+        const hole = this.parentNode;
+        
+        // Jeśli krecik jest już schowany (np. lag), nie licz punktu
+        if(!hole.classList.contains('up')) return;
+
+        score++;
+        this.parentNode.classList.remove('up'); // Schowaj krecika natychmiast
+        scoreDisplay.textContent = score;
+
+        // WAŻNE: Anulujemy "naturalne chowanie się" krecika, bo właśnie go uderzyliśmy
+        clearTimeout(moleTimeout);
+        
+        // I od razu pokazujemy nowego (zgodnie z życzeniem)
+        setTimeout(() => peep(), 100); 
+    }
+
+    // Koniec gry
+    function endGame() {
+        timeUp = true;
+        clearInterval(gameTimerInterval);
+        clearTimeout(moleTimeout);
+        
+        // Schowaj wszystkie kreciki
+        holes.forEach(hole => hole.classList.remove('up'));
+
+        // Obsługa rekordu w LocalStorage
+        const savedRecord = localStorage.getItem('krecik');
+        let record = savedRecord ? parseInt(savedRecord) : 0;
+        
+        if (score > record) {
+            record = score;
+            localStorage.setItem('krecik', record);
+        }
+
+        // Wyświetl modal
+        finalScoreEl.innerText = score;
+        bestScoreEl.innerText = record;
+        modal.style.display = 'flex';
+    }
+
+    // Podpięcie zdarzeń kliknięcia
+    moles.forEach(mole => mole.addEventListener('click', bonk));
+    // Obsługa dotyku na telefonach (szybsza niż click)
+    moles.forEach(mole => mole.addEventListener('touchstart', bonk));
+
+    // Pokaż modal startowy/końcowy na początku (opcjonalnie, tu ukrywamy go i pokazujemy przycisk startu normalnie, ale dla uproszczenia w kodzie HTML jest przycisk w modalu, więc wywołamy endGame() na starcie tylko żeby pokazać menu, albo po prostu startGame() ręcznie)
+    // Aby gra nie startowała sama, odpalimy modal "Game Over" jako menu startowe (z tekstem 0)
+    // Ale w Twoim opisie jest przycisk "Nowa Gra" po przegranej. Na start damy po prostu przycisk w HTML?
+    // Dla uproszczenia - od razu pokazujemy modal jako "Start"
+    modal.style.display = 'flex';
+    document.querySelector('#game-over-modal h2').innerText = "Witaj!";
+    document.querySelector('#game-over-modal button').innerText = "Start Gry ▶️";
+    // Ukrywamy wyniki na ekranie startowym, żeby nie mylić
+    document.querySelectorAll('.stat-box').forEach(el => el.style.display = 'none');
+    
+    // Nadpisanie funkcji przycisku, żeby przywrócić widoczność wyników po pierwszej grze
+    const btn = document.querySelector('#game-over-modal button');
+    btn.onclick = () => {
+        document.querySelector('#game-over-modal h2').innerText = "Czas minął!";
+        document.querySelectorAll('.stat-box').forEach(el => el.style.display = 'block');
+        btn.innerText = "Nowa Gra 🔄";
+        startGame();
+    };
+
+</script>
+</body>
+</html>
