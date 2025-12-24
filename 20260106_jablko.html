@@ -140,6 +140,7 @@
     </div>
 
     <script>
+        let dawid108 = localStorage.getItem("dawid108") || 0;
         const gameContainer = document.getElementById('game-container');
         const worm = document.getElementById('worm');
         const scorejablkoDisplay = document.getElementById('scorejablko-display');
@@ -214,6 +215,9 @@
 
                 if (checkCollision(apple, worm)) {
                     scorejablko++;
+                    dawid108++;
+                    localStorage.setItem("dawid108", dawid108);
+                    console.log("dawid108:", dawid108);
                     scorejablkoDisplay.textContent = 'Wynik: ' + scorejablko;
                     apple.remove();
                 } else if (appleTop > gameContainer.clientHeight) {
