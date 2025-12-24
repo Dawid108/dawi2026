@@ -28,6 +28,22 @@
                 <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754815264/goldrun_fayrn5.png" alt="Gold Run">
                 <span>Gold Run</span>
             </a>
+            <a href="20260106_zabka.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766339973/zabka_kse8oi.png" alt="Żabka">
+                <span>Żabka</span>
+            </a>
+            <a href="20260106_kosmos.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766408367/kosmos_xgkfai.png" alt="Kosmos">
+                <span>Kosmos</span>
+            </a>
+            <a href="20260106_halloween.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766320514/halloween_dcjjsf.png" alt="Halloween">
+                <span>Halloween</span>
+            </a>
+            <a href="20260106_samolot.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766396487/samolot_laxp46.png" alt="Samolot">
+                <span>Samolot</span>
+            </a>
             <a href="20260106_ufo.html" class="app-icon">
                 <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754815441/ufo_utvgyg.png" alt="Ufo">
                 <span>Ufo</span>
@@ -36,6 +52,18 @@
                 <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254272/waz_buwjhx.png" alt="Wąż">
                 <span>Wąż</span>
             </a>
+            <a href="20260106_dinozaur.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766414369/dinozaur_jj7ky9.png" alt="Dinozaur">
+                <span>Dinozaur</span>
+            </a>
+            <a href="20260106_bieg.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766418837/bieg_rghflc.png" alt="Bieg">
+                <span>Bieg</span>
+            </a>
+            <a href="20260106_jablko.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1750450328/logozbieraniajablek_kndluj.png" alt="Jabłko">
+                <span>Jabłko</span>
+            </a>
             <a href="20260106_wedkarstwo.html" class="app-icon">
                 <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1754934579/wedkarstwo_yyyxnx.png" alt="Wędkarstwo">
                 <span>Wędkarstwo</span>
@@ -43,6 +71,14 @@
             <a href="20260106_bloki.html" class="app-icon">
                 <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254392/bloczki_rf1skv.png" alt="Bloczki">
                 <span>Bloczki</span>
+            </a>
+            <a href="20260106_tenis.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766320333/tenis_adypws.png" alt="Tenis">
+                <span>Tenis</span>
+            </a>
+            <a href="20260106_krecik.html" class="app-icon">
+                <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766517571/krecik_wcv4q5.png" alt="Krecik">
+                <span>Krecik</span>
             </a>
             <a href="20260106_karne.html" class="app-icon">
                 <img src="https://res.cloudinary.com/diljpkw9f/image/upload/v1766254518/karne_awosir.png" alt="Karne">
@@ -60,30 +96,42 @@
 
     if (punkty === null) return;
 
-    // DODANE ZMIENNE
-    let tetris = localStorage.getItem("tetris") || 0;
-    let flaga_emotka_best = localStorage.getItem("flaga_emotka_best") || 0;
+    // ZMIENNE DLA GIER
     let gr_best = localStorage.getItem("gr_best") || 0;
-    let karne = localStorage.getItem("karne") || 0;
-    let murek = localStorage.getItem("murek") || 0;
-    let snake = localStorage.getItem("snake") || 0;
-    let tenis = localStorage.getItem("tenis") || 0;
-    let ufo_record = localStorage.getItem("ufo_record") || 0;
-    let fishing_record = localStorage.getItem("fishing_record") || 0;
     let zabka = localStorage.getItem("zabka") || 0;
+    let kosmos = localStorage.getItem("kosmos") || 0;
+    let murek = localStorage.getItem("murek") || 0;
+    let kosmicznySmiecHighScore = localStorage.getItem("kosmicznySmiecHighScore") || 0;
+    let ufo_record = localStorage.getItem("ufo_record") || 0;
+    let snake = localStorage.getItem("snake") || 0;
+    let dinozaur = localStorage.getItem("dinozaur") || 0;
+    let biegacz = localStorage.getItem("biegacz") || 0;
+    let highScorejablko = localStorage.getItem("highScorejablko") || 0;
+    let fishing_record = localStorage.getItem("fishing_record") || 0;
+    let tetris = localStorage.getItem("tetris") || 0;
+    let tenis = localStorage.getItem("tenis") || 0;
+    let krecik = localStorage.getItem("krecik") || 0;
+    let karne = localStorage.getItem("karne") || 0;
+    let flaga_emotka_best = localStorage.getItem("flaga_emotka_best") || 0;
 
     let url = "https://dawid108.infinityfree.me/receive.html"
         + "?punkty=" + encodeURIComponent(punkty)
-        + "&tetris=" + encodeURIComponent(tetris)
-        + "&flaga_emotka_best=" + encodeURIComponent(flaga_emotka_best)
         + "&gr_best=" + encodeURIComponent(gr_best)
-        + "&karne=" + encodeURIComponent(karne)
+        + "&zabka=" + encodeURIComponent(zabka)
+        + "&kosmos=" + encodeURIComponent(kosmos)
         + "&murek=" + encodeURIComponent(murek)
-        + "&snake=" + encodeURIComponent(snake)
-        + "&tenis=" + encodeURIComponent(tenis)
+        + "&kosmicznySmiecHighScore=" + encodeURIComponent(kosmicznySmiecHighScore)
         + "&ufo_record=" + encodeURIComponent(ufo_record)
+        + "&snake=" + encodeURIComponent(snake)
+        + "&dinozaur=" + encodeURIComponent(dinozaur)
+        + "&biegacz=" + encodeURIComponent(biegacz)
+        + "&highScorejablko=" + encodeURIComponent(highScorejablko)
         + "&fishing_record=" + encodeURIComponent(fishing_record)
-        + "&zabka=" + encodeURIComponent(zabka);
+        + "&tetris=" + encodeURIComponent(tetris)
+        + "&tenis=" + encodeURIComponent(tenis)
+        + "&krecik=" + encodeURIComponent(krecik)
+        + "&karne=" + encodeURIComponent(karne)
+        + "&flaga_emotka_best=" + encodeURIComponent(flaga_emotka_best);
 
     if (!sessionStorage.getItem("sentToInfinity")) {
         sessionStorage.setItem("sentToInfinity", "1");
