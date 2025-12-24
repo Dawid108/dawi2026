@@ -194,6 +194,7 @@
     </div>
 
 <script>
+    let dawid108 = localStorage.getItem("dawid108") || 0;
     const holes = document.querySelectorAll('.hole');
     const moles = document.querySelectorAll('.mole');
     const scoreDisplay = document.getElementById('score-display');
@@ -269,6 +270,9 @@
         if(!hole.classList.contains('up')) return;
 
         score++;
+        dawid108++;
+        localStorage.setItem("dawid108", dawid108);
+        console.log("dawid108:", dawid108);
         hole.classList.remove('up');
         scoreDisplay.textContent = score;
 
