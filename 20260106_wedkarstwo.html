@@ -112,7 +112,7 @@
 
     let dawid108 = localStorage.getItem("dawid108") || 0;
     let score = 0;
-    let best = parseInt(localStorage.getItem('fishing_record')||'0');
+    let best = parseInt(localStorage.getItem('wedkarstwo')||'0');
     bestEl.textContent = best;
     topRecord.textContent = 'Rekord: ' + best;
 
@@ -163,7 +163,7 @@
       startBtn.textContent = 'Nowa Gra';
       if(score>best){
         best = score;
-        localStorage.setItem('fishing_record', String(best));
+        localStorage.setItem('wedkarstwo', String(best));
         bestEl.textContent = best;
         topRecord.textContent = 'Rekord: ' + best;
       }
