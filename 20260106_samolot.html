@@ -159,7 +159,7 @@
         // Przeszkody (asteroidy)
         let obstacles = [];
         let lastObstacleSpawnTime = 0;
-        let highScore = localStorage.getItem('kosmicznySmiecHighScore') ? parseInt(localStorage.getItem('kosmicznySmiecHighScore')) : 0;
+        let highScore = localStorage.getItem('samolot') ? parseInt(localStorage.getItem('samolot')) : 0;
 
         // Funkcje rysowania
         function drawShip() {
@@ -285,7 +285,7 @@
             // Aktualizacja rekordu
             if (score > highScore) {
                 highScore = score;
-                localStorage.setItem('kosmicznySmiecHighScore', highScore);
+                localStorage.setItem('samolot', highScore);
             }
 
             // Wyświetlenie ekranu końca gry z wynikami
