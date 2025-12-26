@@ -263,10 +263,10 @@ function loop(time) {
 
 function endGame() {
     running = false;
-    let record = Number(localStorage.getItem("biegacz")) || 0;
+    let record = Number(localStorage.getItem("bieg")) || 0;
     if (score > record) {
         record = score;
-        localStorage.setItem("biegacz", record);
+        localStorage.setItem("bieg", record);
     }
     finalScoreEl.textContent = "Wynik: " + score;
     recordScoreEl.textContent = "Rekord: " + record;
