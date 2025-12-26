@@ -236,10 +236,10 @@
             isGameRunning = false;
             clearTimeout(appleIntervalTimeout);
             
-            let high = localStorage.getItem('highScorejablko') || 0;
+            let high = localStorage.getItem('jablko') || 0;
             if (scorejablko > high) {
                 high = scorejablko;
-                localStorage.setItem('highScorejablko', high);
+                localStorage.setItem('jablko', high);
             }
 
             document.getElementById('final-scorejablko').textContent = scorejablko;
