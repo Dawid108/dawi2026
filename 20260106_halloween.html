@@ -416,10 +416,10 @@
         isGameOver = true;
         
         // Obsługa Rekordu
-        let record = localStorage.getItem('murek') || 0;
+        let record = localStorage.getItem('halloween') || 0;
         if(score > record) {
             record = score;
-            localStorage.setItem('murek', record);
+            localStorage.setItem('halloween', record);
         }
 
         finalScoreEl.innerText = score;
