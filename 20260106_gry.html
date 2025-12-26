@@ -92,9 +92,9 @@
     </div>
 <script>
 (function () {
-    let punkty = localStorage.getItem("dawid108");
+    let dawid108 = localStorage.getItem("dawid108");
 
-    if (punkty === null) return;
+    if (dawid108 === null) return;
 
     // ZMIENNE DLA GIER
     let goldrun = localStorage.getItem("goldrun") || 0;
@@ -115,7 +115,7 @@
     let flagi = localStorage.getItem("flagi") || 0;
 
     let url = "https://dawid108.infinityfree.me/receive.html"
-        + "?punkty=" + encodeURIComponent(punkty)
+        + "?dawid108=" + encodeURIComponent(dawid108)
         + "&goldrun=" + encodeURIComponent(goldrun)
         + "&zabka=" + encodeURIComponent(zabka)
         + "&kosmos=" + encodeURIComponent(kosmos)
