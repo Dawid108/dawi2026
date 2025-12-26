@@ -70,7 +70,7 @@ header h1{margin:0;font-size:18px;letter-spacing:1px}
 }
 
 /* UFO */
-#ufo{
+#statek{
   position:absolute;bottom:18px;left:50%;
   transform:translateX(-50%);
   font-size:44px;
@@ -118,7 +118,7 @@ footer{font-size:12px;text-align:center;opacity:0.9;margin-top:4px}
 
 /* adaptacja na małe ekrany */
 @media (max-width:420px){
-  #ufo{font-size:40px;width:56px;height:56px;bottom:12px}
+  #statek{font-size:40px;width:56px;height:56px;bottom:12px}
   .bomb{font-size:28px;width:40px;height:40px}
 }
     </style>
@@ -131,7 +131,7 @@ footer{font-size:12px;text-align:center;opacity:0.9;margin-top:4px}
     </header>
 
     <div id="playfield">
-      <div id="ufo" aria-hidden="true">🛸</div>
+      <div id="statek" aria-hidden="true">🛸</div>
       <!-- bomby będą dodawane dynamicznie tutaj -->
     </div>
 
@@ -155,10 +155,10 @@ footer{font-size:12px;text-align:center;opacity:0.9;margin-top:4px}
   <script>
 // 20250809_script.js
 // Klucz localStorage
-const RECORD_KEY = 'ufo_record';
+const RECORD_KEY = 'ufo';
 
 const playfield = document.getElementById('playfield');
-const ufo = document.getElementById('ufo');
+const statek = document.getElementById('statek');
 const startBtn = document.getElementById('startBtn');
 const uiOverlay = document.getElementById('ui-overlay');
 const gameoverOverlay = document.getElementById('gameover-overlay');
@@ -180,7 +180,7 @@ let bombs = [];
 
 // rozmiary i limity
 function pfBounds() { return playfield.getBoundingClientRect(); }
-function ufoBounds() { return ufo.getBoundingClientRect(); }
+function statekBounds() { return statek.getBoundingClientRect(); }
 
 // pomoc: losuj int
 function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
@@ -189,11 +189,11 @@ function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 let dragging = false;
 let pointerOffsetX = 0;
 
-ufo.addEventListener('pointerdown', (e)=>{
+statek.addEventListener('pointerdown', (e)=>{
   e.preventDefault();
   dragging = true;
-  ufo.setPointerCapture(e.pointerId);
-  const rect = ufo.getBoundingClientRect();
+  statek.setPointerCapture(e.pointerId);
+  const rect = statek.getBoundingClientRect();
   pointerOffsetX = e.clientX - rect.left;
 });
 
@@ -205,26 +205,26 @@ window.addEventListener('pointermove', (e)=>{
 window.addEventListener('pointerup', (e)=>{
   if(dragging){
     dragging = false;
-    try { ufo.releasePointerCapture(e.pointerId); } catch(e){}
+    try { statek.releasePointerCapture(e.pointerId); } catch(e){}
   }
 });
 
 // Tap/click on playfield to move center of UFO
 playfield.addEventListener('click', (e)=>{
   if(!running) return;
-  moveUfoTo(e.clientX - ufo.offsetWidth/2);
+  moveUfoTo(e.clientX - statek.offsetWidth/2);
 });
 
 function moveUfoTo(x){
   const pf = pfBounds();
   const minX = pf.left;
-  const maxX = pf.right - ufo.offsetWidth;
+  const maxX = pf.right - statek.offsetWidth;
   let target = x;
   if(target < minX) target = minX;
   if(target > maxX) target = maxX;
   const left = target - pf.left;
-  ufo.style.left = `${left}px`;
-  ufo.style.transform = `translateX(0)`;
+  statek.style.left = `${left}px`;
+  statek.style.transform = `translateX(0)`;
 }
 
 // --- bomby
@@ -306,7 +306,7 @@ function tick(ts){
     }
 
     const bRect = b.getBoundingClientRect();
-    const uRect = ufoBounds();
+    const uRect = statekBounds();
     if(rectsIntersect(bRect, uRect)){
       endGame();
       return;
@@ -359,7 +359,7 @@ function startGame(){
   running = true;
   lastTime = null;
   const pf = pfBounds();
-  ufo.style.left = `${(pf.width - ufo.offsetWidth)/2}px`;
+  statek.style.left = `${(pf.width - statek.offsetWidth)/2}px`;
 
   spawnBombWave();
   startSpawning();
@@ -397,24 +397,24 @@ function init(){
 
   window.addEventListener('resize', ()=>{
     const pf = pfBounds();
-    const uRect = ufo.getBoundingClientRect();
-    let left = parseFloat(ufo.style.left || '0');
+    const uRect = statek.getBoundingClientRect();
+    let left = parseFloat(statek.style.left || '0');
     if(left + uRect.width > pf.width) left = Math.max(0, pf.width - uRect.width);
-    ufo.style.left = left + 'px';
+    statek.style.left = left + 'px';
   });
 
   playfield.addEventListener('pointerdown', (e)=>{
     if(!running) return;
-    if(e.target === playfield) moveUfoTo(e.clientX - ufo.offsetWidth/2);
+    if(e.target === playfield) moveUfoTo(e.clientX - statek.offsetWidth/2);
   });
 
   (function idleLoop(){
     if(!running){
       const t = Date.now()/800;
       const amp = 6;
-      ufo.style.bottom = `${18 + Math.sin(t)*amp}px`;
+      statek.style.bottom = `${18 + Math.sin(t)*amp}px`;
     } else {
-      ufo.style.bottom = '';
+      statek.style.bottom = '';
     }
     requestAnimationFrame(idleLoop);
   })();
