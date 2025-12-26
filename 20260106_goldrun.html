@@ -197,7 +197,7 @@ const POINTS_PER_HIT_BOTTOM = 5;
 
 /* --- STORAGE --- */
 let coins = Number(localStorage.getItem('gr_coins')||0);
-let best = Number(localStorage.getItem('gr_best')||0);
+let best = Number(localStorage.getItem('goldrun')||0);
 let unlocked = JSON.parse(localStorage.getItem('gr_unlocked')||'{}');
 let selectedChar = localStorage.getItem('gr_char')||'cat';
 let selectedMap = localStorage.getItem('gr_map')||'city';
@@ -459,7 +459,7 @@ function startGame(){
 
 function endGame(){
   running = false;
-  if(score > best){ best = score; localStorage.setItem('gr_best', best); bestEl.textContent = best; }
+  if(score > best){ best = score; localStorage.setItem('goldrun', best); bestEl.textContent = best; }
   scoreFinalEl.textContent = score; gameOverEl.classList.remove('hidden');
 }
 
@@ -517,7 +517,7 @@ window.addEventListener('beforeunload', ()=>{
   localStorage.setItem('gr_unlocked', JSON.stringify(unlocked));
   localStorage.setItem('gr_char', selectedChar);
   localStorage.setItem('gr_map', selectedMap);
-  localStorage.setItem('gr_best', best);
+  localStorage.setItem('goldrun', best);
 });
 
 function getSelectedCharFrames(){ const ch = CHARACTERS.find(c=>c.id===selectedChar); return ch ? ch.emoji : ['🐱','😺','😸']; }
