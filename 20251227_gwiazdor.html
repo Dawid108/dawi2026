@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pl">
-<head>    
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -22,11 +22,11 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #1a1a2e; /* Ciemne tło, nocne niebo */
+            background-color: #1a1a2e; /* Ciemne tło */
             color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden; /* Blokada przewijania */
-            touch-action: none; /* Blokada gestów przeglądarki na telefonie */
+            overflow: hidden; /* Blokada paska przewijania */
+            touch-action: none; /* Blokada gestów na telefonie */
             user-select: none;
         }
 
@@ -35,23 +35,22 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden;
+            cursor: none; /* Ukrywamy kursor systemowy, bo Mikołaj go zastępuje */
         }
 
         #player {
             position: absolute;
             bottom: 20px;
             font-size: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            cursor: pointer;
+            /* Usunąłem transform, który przesuwał mikołaja obok kursora */
+            left: calc(50% - 30px); /* Startowo na środku */
             z-index: 10;
-            /* Płynniejsze ruchy */
-            transition: transform 0.05s linear; 
+            pointer-events: none; /* Ważne: Mikołaj nie blokuje zdarzeń myszki */
         }
 
         .item {
             position: absolute;
-            top: -50px;
+            top: -60px;
             font-size: 40px;
             z-index: 5;
         }
@@ -67,9 +66,9 @@
             border-radius: 10px;
         }
 
-        /* Ekran końcowy (Modal) */
+        /* Ekran końcowy */
         #game-over-modal {
-            display: none; /* Domyślnie ukryty */
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
@@ -81,6 +80,7 @@
             align-items: center;
             flex-direction: column;
             text-align: center;
+            cursor: default; /* Przywracamy kursor w menu */
         }
 
         #game-over-modal h1 {
@@ -111,7 +111,6 @@
             transform: scale(0.95);
         }
 
-        /* Instrukcja na start */
         #start-hint {
             position: absolute;
             top: 50%;
@@ -129,11 +128,11 @@
     <div id="game-area">
         <div id="score-board">Punkty: <span id="score">0</span></div>
         <div id="player">🎅</div>
-        <div id="start-hint">Ruszaj myszką lub palcem,<br>aby sterować Mikołajem</div>
+        <div id="start-hint">Dotknij i przesuwaj,<br>żeby łapać prezenty!</div>
     </div>
 
     <div id="game-over-modal">
-        <h1>KONIEC GRY 💥</h1>
+        <h1>BOMBA! 💥</h1>
         <div class="result-text">Wynik: <span id="final-score">0</span></div>
         <div class="result-text">Rekord: <span id="best-score">0</span></div>
         <button id="restart-btn" onclick="restartGame()">Nowa Gra</button>
@@ -151,32 +150,29 @@
 
         let score = 0;
         let gameActive = true;
-        let items = []; // Tablica przechowująca spadające obiekty
-        let spawnInterval;
-        let gameLoopId;
+        let items = []; 
+        let spawnTimeout;
         
         // Parametry trudności
         let speedMultiplier = 1;
-        let spawnRate = 1000; // startowo co 1000ms
+        let spawnRate = 900; 
 
         // --- STEROWANIE ---
         
-        // Funkcja ustawiająca pozycję gracza
         function movePlayer(clientX) {
             if (!gameActive) return;
             
-            // Ukryj podpowiedź po pierwszym ruchu
             startHint.style.display = 'none';
 
             const gameWidth = gameArea.offsetWidth;
-            const playerWidth = player.offsetWidth;
+            const playerWidth = player.offsetWidth; // ok. 60-80px zależnie od czcionki
             
-            // Ograniczenie ruchu do szerokości ekranu
+            // CENTROWANIE: Pozycja to miejsce myszki MINUS połowa szerokości Mikołaja
             let newLeft = clientX - (playerWidth / 2);
             
             // Blokada wyjeżdżania poza ekran
-            if (newLeft < 0) newLeft = 0;
-            if (newLeft > gameWidth - playerWidth) newLeft = gameWidth - playerWidth;
+            if (newLeft < -20) newLeft = -20; // Lekki margines
+            if (newLeft > gameWidth - playerWidth + 20) newLeft = gameWidth - playerWidth + 20;
 
             player.style.left = newLeft + 'px';
         }
@@ -188,100 +184,121 @@
 
         // Obsługa dotyku (Telefon)
         document.addEventListener('touchmove', (e) => {
-            e.preventDefault(); // Blokuje przewijanie strony
+            // e.preventDefault() jest kluczowe, żeby ekran nie skakał
+            if(gameActive) e.preventDefault(); 
             movePlayer(e.touches[0].clientX);
         }, { passive: false });
 
         // --- MECHANIKA GRY ---
 
         function startGame() {
-            // Reset zmiennych
             score = 0;
             speedMultiplier = 1;
-            spawnRate = 1000;
+            spawnRate = 900;
             scoreEl.innerText = score;
             gameActive = true;
+            
             modal.style.display = 'none';
+            gameArea.style.cursor = 'none'; // Ukryj kursor podczas gry
             startHint.style.display = 'block';
 
-            // Wyczyść planszę z poprzednich elementów
+            // Czyszczenie planszy
             items.forEach(item => item.element.remove());
             items = [];
 
-            // Uruchom pętlę gry i spawnowanie
+            // Reset timerów
+            clearTimeout(spawnTimeout);
+
             lastTime = performance.now();
             requestAnimationFrame(gameLoop);
-            spawnItemLoop();
+            scheduleNextSpawn();
         }
 
-        // Tworzenie prezentu lub bomby
-        function spawnItem() {
+        // Funkcja decydująca ILE przedmiotów spadnie naraz
+        function spawnCluster() {
             if (!gameActive) return;
 
+            // Szansa na liczbe przedmiotow:
+            // 60% na 1 przedmiot
+            // 30% na 2 przedmioty
+            // 10% na 3 przedmioty
+            // (Im wyższy poziom, tym większa szansa na 2 i 3 - opcjonalnie)
+            
+            let rand = Math.random();
+            let count = 1;
+
+            if (score > 10 && rand > 0.6) count = 2; // Od 10 punktów zaczynają spadać po dwa
+            if (score > 25 && rand > 0.85) count = 3; // Od 25 punktów mogą spaść trzy
+
+            for (let i = 0; i < count; i++) {
+                spawnSingleItem();
+            }
+
+            scheduleNextSpawn();
+        }
+
+        function scheduleNextSpawn() {
+            if (!gameActive) return;
+            // Czas do następnego zrzutu
+            let nextTime = spawnRate;
+            if (nextTime < 400) nextTime = 400; // Minimalny odstęp
+            spawnTimeout = setTimeout(spawnCluster, nextTime);
+        }
+
+        // Tworzenie pojedynczego obiektu
+        function spawnSingleItem() {
             const el = document.createElement('div');
             el.classList.add('item');
             
-            // Losowanie: 15% szans na bombę na początku, ale im trudniej tym więcej bomb
-            // Jednak w tej wersji trzymamy stały stosunek typów, a zwiększamy prędkość
-            const isBomb = Math.random() < 0.25; 
+            // 30% szans na bombę (trochę trudniej)
+            const isBomb = Math.random() < 0.3; 
             
             el.innerText = isBomb ? '💣' : '🎁';
             el.dataset.type = isBomb ? 'bomb' : 'gift';
 
             // Losowa pozycja X
-            const maxLeft = gameArea.offsetWidth - 50; // 50 to szerokość emotki
+            const maxLeft = gameArea.offsetWidth - 50;
             el.style.left = Math.floor(Math.random() * maxLeft) + 'px';
             
             gameArea.appendChild(el);
 
+            // BAZOWA PRĘDKOŚĆ ZWIĘKSZONA: (5 do 10 pikseli na klatkę) * mnożnik
+            let baseSpeed = Math.random() * 5 + 5; 
+
             items.push({
                 element: el,
-                y: -50,
-                speed: (Math.random() * 2 + 3) * speedMultiplier // Losowa prędkość bazowa * trudność
+                y: -60,
+                speed: baseSpeed * speedMultiplier
             });
-
-            // Kolejny spawn z dynamicznym czasem
-            let nextSpawnTime = spawnRate;
-            if (nextSpawnTime < 300) nextSpawnTime = 300; // Limit minimalny
-            setTimeout(spawnItem, nextSpawnTime);
         }
 
-        function spawnItemLoop() {
-             setTimeout(spawnItem, 1000); // Pierwszy spawn po 1s
-        }
-
-        // Główna pętla gry
+        // Główna pętla gry (animacja spadania)
         function gameLoop() {
             if (!gameActive) return;
 
-            // Przesuwanie elementów i detekcja kolizji
             for (let i = items.length - 1; i >= 0; i--) {
                 let item = items[i];
                 
-                // Ruch w dół
                 item.y += item.speed;
                 item.element.style.top = item.y + 'px';
 
-                // Sprawdzenie czy wypadł poza ekran
+                // Usunięcie po wypadnięciu
                 if (item.y > window.innerHeight) {
                     item.element.remove();
                     items.splice(i, 1);
                     continue;
                 }
 
-                // Kolizja z graczem
+                // Kolizja
                 if (checkCollision(player, item.element)) {
                     if (item.element.dataset.type === 'gift') {
-                        // Zebranie prezentu
                         score++;
                         scoreEl.innerText = score;
                         increaseDifficulty();
                         
-                        // Efekt wizualny (opcjonalny, prosta animacja znikania)
                         item.element.remove();
                         items.splice(i, 1);
                     } else {
-                        // Bomba!
                         gameOver();
                         return;
                     }
@@ -291,53 +308,52 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Prosta detekcja kolizji prostokątów (AABB)
         function checkCollision(playerDiv, itemDiv) {
+            // Zmniejszamy obszar kolizji gracza (hitbox), żeby było uczciwiej
+            // Bierzemy 70% wielkości mikołaja jako obszar trafienia
             const pRect = playerDiv.getBoundingClientRect();
             const iRect = itemDiv.getBoundingClientRect();
+            
+            const hitBoxMargin = pRect.width * 0.2; // 20% marginesu z każdej strony
 
             return !(
-                pRect.top > iRect.bottom ||
-                pRect.right < iRect.left ||
-                pRect.bottom < iRect.top ||
-                pRect.left > iRect.right
+                pRect.top + hitBoxMargin > iRect.bottom ||
+                pRect.right - hitBoxMargin < iRect.left ||
+                pRect.bottom - hitBoxMargin < iRect.top ||
+                pRect.left + hitBoxMargin > iRect.right
             );
         }
 
-        // Zwiększanie poziomu trudności
         function increaseDifficulty() {
-            // Co każde 5 punktów gra przyspiesza
+            // Szybszy wzrost trudności
             if (score % 5 === 0) {
-                speedMultiplier += 0.15; // Prezenty spadają szybciej
-                spawnRate -= 50;         // Prezenty pojawiają się częściej
+                speedMultiplier += 0.1; // Szybciej spadają
+                spawnRate -= 40;        // Częściej się pojawiają
             }
         }
 
-        // Koniec gry
         function gameOver() {
             gameActive = false;
+            clearTimeout(spawnTimeout);
             
-            // Pobieranie i zapisywanie rekordu
+            gameArea.style.cursor = 'default'; // Przywróć kursor
+
             let bestScore = localStorage.getItem('gwiazdor') || 0;
-            if (score > bestScore) {
+            if (score > parseInt(bestScore)) {
                 bestScore = score;
                 localStorage.setItem('gwiazdor', bestScore);
             }
 
-            // Wypełnienie modala
             finalScoreEl.innerText = score;
             bestScoreEl.innerText = bestScore;
             
-            // Wyświetlenie modala
             modal.style.display = 'flex';
         }
 
-        // Restart
         function restartGame() {
             startGame();
         }
 
-        // Start przy załadowaniu
         startGame();
 
     </script>
