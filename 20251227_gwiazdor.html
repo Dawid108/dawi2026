@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Gwiazdor</title>
+    <meta name="description" content="Gwiazdor">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+
+    <script src="./script.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e; /* Ciemne tło, nocne niebo */
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; /* Blokada przewijania */
+            touch-action: none; /* Blokada gestów przeglądarki na telefonie */
+            user-select: none;
+        }
+
+        #game-area {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #player {
+            position: absolute;
+            bottom: 20px;
+            font-size: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: pointer;
+            z-index: 10;
+            /* Płynniejsze ruchy */
+            transition: transform 0.05s linear; 
+        }
+
+        .item {
+            position: absolute;
+            top: -50px;
+            font-size: 40px;
+            z-index: 5;
+        }
+
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            border-radius: 10px;
+        }
+
+        /* Ekran końcowy (Modal) */
+        #game-over-modal {
+            display: none; /* Domyślnie ukryty */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        #game-over-modal h1 {
+            font-size: 40px;
+            margin-bottom: 10px;
+            color: #ff4d4d;
+        }
+
+        .result-text {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+
+        #restart-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 24px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+            transition: transform 0.2s;
+        }
+
+        #restart-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Instrukcja na start */
+        #start-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            color: #ccc;
+            pointer-events: none;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-area">
+        <div id="score-board">Punkty: <span id="score">0</span></div>
+        <div id="player">🎅</div>
+        <div id="start-hint">Ruszaj myszką lub palcem,<br>aby sterować Mikołajem</div>
+    </div>
+
+    <div id="game-over-modal">
+        <h1>KONIEC GRY 💥</h1>
+        <div class="result-text">Wynik: <span id="final-score">0</span></div>
+        <div class="result-text">Rekord: <span id="best-score">0</span></div>
+        <button id="restart-btn" onclick="restartGame()">Nowa Gra</button>
+    </div>
+
+    <script>
+        // --- ZMIENNE GRY ---
+        const player = document.getElementById('player');
+        const gameArea = document.getElementById('game-area');
+        const scoreEl = document.getElementById('score');
+        const modal = document.getElementById('game-over-modal');
+        const finalScoreEl = document.getElementById('final-score');
+        const bestScoreEl = document.getElementById('best-score');
+        const startHint = document.getElementById('start-hint');
+
+        let score = 0;
+        let gameActive = true;
+        let items = []; // Tablica przechowująca spadające obiekty
+        let spawnInterval;
+        let gameLoopId;
+        
+        // Parametry trudności
+        let speedMultiplier = 1;
+        let spawnRate = 1000; // startowo co 1000ms
+
+        // --- STEROWANIE ---
+        
+        // Funkcja ustawiająca pozycję gracza
+        function movePlayer(clientX) {
+            if (!gameActive) return;
+            
+            // Ukryj podpowiedź po pierwszym ruchu
+            startHint.style.display = 'none';
+
+            const gameWidth = gameArea.offsetWidth;
+            const playerWidth = player.offsetWidth;
+            
+            // Ograniczenie ruchu do szerokości ekranu
+            let newLeft = clientX - (playerWidth / 2);
+            
+            // Blokada wyjeżdżania poza ekran
+            if (newLeft < 0) newLeft = 0;
+            if (newLeft > gameWidth - playerWidth) newLeft = gameWidth - playerWidth;
+
+            player.style.left = newLeft + 'px';
+        }
+
+        // Obsługa myszki (PC)
+        document.addEventListener('mousemove', (e) => {
+            movePlayer(e.clientX);
+        });
+
+        // Obsługa dotyku (Telefon)
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Blokuje przewijanie strony
+            movePlayer(e.touches[0].clientX);
+        }, { passive: false });
+
+        // --- MECHANIKA GRY ---
+
+        function startGame() {
+            // Reset zmiennych
+            score = 0;
+            speedMultiplier = 1;
+            spawnRate = 1000;
+            scoreEl.innerText = score;
+            gameActive = true;
+            modal.style.display = 'none';
+            startHint.style.display = 'block';
+
+            // Wyczyść planszę z poprzednich elementów
+            items.forEach(item => item.element.remove());
+            items = [];
+
+            // Uruchom pętlę gry i spawnowanie
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+            spawnItemLoop();
+        }
+
+        // Tworzenie prezentu lub bomby
+        function spawnItem() {
+            if (!gameActive) return;
+
+            const el = document.createElement('div');
+            el.classList.add('item');
+            
+            // Losowanie: 15% szans na bombę na początku, ale im trudniej tym więcej bomb
+            // Jednak w tej wersji trzymamy stały stosunek typów, a zwiększamy prędkość
+            const isBomb = Math.random() < 0.25; 
+            
+            el.innerText = isBomb ? '💣' : '🎁';
+            el.dataset.type = isBomb ? 'bomb' : 'gift';
+
+            // Losowa pozycja X
+            const maxLeft = gameArea.offsetWidth - 50; // 50 to szerokość emotki
+            el.style.left = Math.floor(Math.random() * maxLeft) + 'px';
+            
+            gameArea.appendChild(el);
+
+            items.push({
+                element: el,
+                y: -50,
+                speed: (Math.random() * 2 + 3) * speedMultiplier // Losowa prędkość bazowa * trudność
+            });
+
+            // Kolejny spawn z dynamicznym czasem
+            let nextSpawnTime = spawnRate;
+            if (nextSpawnTime < 300) nextSpawnTime = 300; // Limit minimalny
+            setTimeout(spawnItem, nextSpawnTime);
+        }
+
+        function spawnItemLoop() {
+             setTimeout(spawnItem, 1000); // Pierwszy spawn po 1s
+        }
+
+        // Główna pętla gry
+        function gameLoop() {
+            if (!gameActive) return;
+
+            // Przesuwanie elementów i detekcja kolizji
+            for (let i = items.length - 1; i >= 0; i--) {
+                let item = items[i];
+                
+                // Ruch w dół
+                item.y += item.speed;
+                item.element.style.top = item.y + 'px';
+
+                // Sprawdzenie czy wypadł poza ekran
+                if (item.y > window.innerHeight) {
+                    item.element.remove();
+                    items.splice(i, 1);
+                    continue;
+                }
+
+                // Kolizja z graczem
+                if (checkCollision(player, item.element)) {
+                    if (item.element.dataset.type === 'gift') {
+                        // Zebranie prezentu
+                        score++;
+                        scoreEl.innerText = score;
+                        increaseDifficulty();
+                        
+                        // Efekt wizualny (opcjonalny, prosta animacja znikania)
+                        item.element.remove();
+                        items.splice(i, 1);
+                    } else {
+                        // Bomba!
+                        gameOver();
+                        return;
+                    }
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Prosta detekcja kolizji prostokątów (AABB)
+        function checkCollision(playerDiv, itemDiv) {
+            const pRect = playerDiv.getBoundingClientRect();
+            const iRect = itemDiv.getBoundingClientRect();
+
+            return !(
+                pRect.top > iRect.bottom ||
+                pRect.right < iRect.left ||
+                pRect.bottom < iRect.top ||
+                pRect.left > iRect.right
+            );
+        }
+
+        // Zwiększanie poziomu trudności
+        function increaseDifficulty() {
+            // Co każde 5 punktów gra przyspiesza
+            if (score % 5 === 0) {
+                speedMultiplier += 0.15; // Prezenty spadają szybciej
+                spawnRate -= 50;         // Prezenty pojawiają się częściej
+            }
+        }
+
+        // Koniec gry
+        function gameOver() {
+            gameActive = false;
+            
+            // Pobieranie i zapisywanie rekordu
+            let bestScore = localStorage.getItem('gwiazdor') || 0;
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('gwiazdor', bestScore);
+            }
+
+            // Wypełnienie modala
+            finalScoreEl.innerText = score;
+            bestScoreEl.innerText = bestScore;
+            
+            // Wyświetlenie modala
+            modal.style.display = 'flex';
+        }
+
+        // Restart
+        function restartGame() {
+            startGame();
+        }
+
+        // Start przy załadowaniu
+        startGame();
+
+    </script>
+</body>
+</html>
