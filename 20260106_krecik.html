@@ -71,6 +71,7 @@
             height: 140px;
             position: relative;
             overflow: hidden;
+            cursor: crosshair; /* Zmieniamy kursor na celownik, żeby sugerować precyzję */
         }
 
         /* Wygląd dziury (ziemia) */
@@ -187,7 +188,7 @@
     </div>
 
     <div id="game-over-modal">
-        <h2>Witaj!</h2>
+        <h2>Koniec Gry!</h2>
         <div class="stat-box" style="display:none">Wynik: <span id="final-score" class="highlight">0</span></div>
         <div class="stat-box" style="display:none">Rekord: <span id="best-score" class="highlight">0</span></div>
         <button onclick="startGameWrapper()">Start Gry ▶️</button>
@@ -212,6 +213,7 @@
     let timeLeft = 30;
     let gameTimerInterval;
     let moleTimeout;
+    let gameStarted = false; // Flaga sprawdzająca czy gra trwa
 
     function randomTime(min, max) {
         return Math.round(Math.random() * (max - min) + min);
@@ -243,6 +245,7 @@
         score = 0;
         timeLeft = 30;
         timeUp = false;
+        gameStarted = true;
         modal.style.display = 'none';
         holes.forEach(hole => hole.classList.remove('up'));
         
@@ -251,21 +254,25 @@
         gameTimerInterval = setInterval(() => {
             timeLeft--;
             timeDisplay.textContent = timeLeft;
-            if (timeLeft <= 0) endGame();
+            if (timeLeft <= 0) endGame("time");
         }, 1000);
     }
 
     // Wrapper potrzebny do zmiany tekstu w modalu po pierwszej grze
     function startGameWrapper() {
-        modalTitle.innerText = "Czas minął!";
         statBoxes.forEach(el => el.style.display = 'block');
         modalBtn.innerText = "Nowa Gra 🔄";
-        modalBtn.onclick = startGame; // Zmień onclick na bezpośredni start
+        modalBtn.onclick = startGame; 
         startGame();
     }
 
     function bonk(e) {
         if (!e.isTrusted) return;
+        
+        // --- KLUCZOWA ZMIANA 1: Zatrzymujemy propagację ---
+        // Dzięki temu kliknięcie w krecika nie jest liczone jako kliknięcie w dziurę (pudło)
+        e.stopPropagation(); 
+
         const hole = this.parentNode;
         if(!hole.classList.contains('up')) return;
 
@@ -280,8 +287,17 @@
         setTimeout(() => peep(), 100);
     }
 
-    function endGame() {
+    // --- KLUCZOWA ZMIANA 2: Funkcja obsługująca pudło ---
+    function miss(e) {
+        if (!gameStarted || timeUp) return; // Jeśli gra nie trwa, ignoruj
+        
+        // Jeśli kliknęliśmy w dziurę (a bonk nie zatrzymał zdarzenia), to znaczy że pudło
+        endGame("miss");
+    }
+
+    function endGame(reason) {
         timeUp = true;
+        gameStarted = false;
         clearInterval(gameTimerInterval);
         clearTimeout(moleTimeout);
         holes.forEach(hole => hole.classList.remove('up'));
@@ -293,14 +309,31 @@
             localStorage.setItem('krecik', record);
         }
 
+        // --- Zmiana tytułu zależnie od powodu końca gry ---
+        if (reason === "miss") {
+            modalTitle.innerText = "Pudło! Koniec gry 💀";
+            modalTitle.style.color = "#e74c3c"; // Czerwony kolor dla przegranej
+        } else {
+            modalTitle.innerText = "Czas minął!";
+            modalTitle.style.color = "#f1c40f"; // Żółty kolor standardowy
+        }
+
         finalScoreEl.innerText = score;
         bestScoreEl.innerText = record;
         modal.style.display = 'flex';
     }
 
+    // Dodanie event listenerów do krecików
     moles.forEach(mole => mole.addEventListener('click', bonk));
     moles.forEach(mole => mole.addEventListener('touchstart', bonk));
     
+    // --- KLUCZOWA ZMIANA 3: Dodanie listenerów do dziur (pudła) ---
+    holes.forEach(hole => {
+        hole.addEventListener('click', miss);
+        // Opcjonalnie touchstart na dziurach, ale click zazwyczaj wystarcza i jest bezpieczniejszy
+        // żeby nie dublować zdarzeń na mobile
+    });
+
     // Inicjalizacja modalu
     modal.style.display = 'flex';
 
