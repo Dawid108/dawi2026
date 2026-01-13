@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Bańki</title>
+    <meta name="description" content="Bańki">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#66a6ff">
+
+    <script src="./script.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); /* Wodny gradient */
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            touch-action: none; /* Blokada gestów systemowych */
+            user-select: none;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #game-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair; /* Kursor celownika */
+        }
+
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            pointer-events: none; /* Kliknięcia przenikają przez wynik */
+            z-index: 10;
+        }
+
+        .bubble {
+            position: absolute;
+            font-size: 80px; /* Duże bańki */
+            line-height: 80px;
+            cursor: pointer;
+            z-index: 5;
+            /* Animacja pojawiania się */
+            animation: popIn 0.2s ease-out;
+            /* Wyśrodkowanie punktu kliknięcia */
+            transform-origin: center center; 
+        }
+
+        .sparkle {
+            position: absolute;
+            font-size: 40px;
+            pointer-events: none;
+            animation: fadeUp 0.5s forwards;
+            z-index: 6;
+        }
+
+        /* Modal Końca Gry */
+        #game-over-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            color: white;
+        }
+
+        #game-over-modal h1 {
+            font-size: 40px;
+            margin-bottom: 10px;
+            color: #ff6b6b;
+        }
+
+        .result-text {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+
+        #reason-text {
+            font-size: 18px;
+            color: #ccc;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        #restart-btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 24px;
+            background-color: #4facfe;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+            transition: transform 0.1s;
+        }
+
+        #restart-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Animacje */
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes fadeUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-30px) scale(1.5); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-area">
+        <div id="score-board">Punkty: <span id="score">0</span></div>
+    </div>
+
+    <div id="game-over-modal">
+        <h1>KONIEC GRY 🫧</h1>
+        <div id="reason-text">...</div>
+        <div class="result-text">Wynik: <span id="final-score">0</span></div>
+        <div class="result-text">Rekord: <span id="best-score">0</span></div>
+        <button id="restart-btn" onclick="restartGame()">Nowa Gra</button>
+    </div>
+
+    <script>
+        let dawid108 = localStorage.getItem("dawid108") || 0;
+        const gameArea = document.getElementById('game-area');
+        const scoreEl = document.getElementById('score');
+        const modal = document.getElementById('game-over-modal');
+        const finalScoreEl = document.getElementById('final-score');
+        const bestScoreEl = document.getElementById('best-score');
+        const reasonTextEl = document.getElementById('reason-text');
+
+        let score = 0;
+        let gameActive = false;
+        let activeBubbles = []; // Przechowuje referencje do baniek i ich timerów
+        let spawnTimeout;
+
+        // --- Parametry Trudności ---
+        let currentLifetime = 5000; // Czas życia bańki w ms (startowo 2s)
+        let spawnRate = 1000;       // Częstotliwość pojawiania się (startowo 1s)
+
+        // --- Start Gry ---
+        function startGame() {
+            score = 0;
+            scoreEl.innerText = score;
+            gameActive = true;
+            modal.style.display = 'none';
+            
+            // Reset trudności
+            currentLifetime = 5000;
+            spawnRate = 1000;
+
+            // Wyczyść planszę
+            activeBubbles.forEach(b => {
+                clearTimeout(b.timer);
+                if(b.el.parentNode) b.el.remove();
+            });
+            activeBubbles = [];
+
+            // Pierwsza bańka
+            spawnBubbleLoop();
+        }
+
+        // --- Pętla Tworzenia Baniek ---
+        function spawnBubbleLoop() {
+            if (!gameActive) return;
+
+            createBubble();
+
+            // Ustal czas do następnej bańki
+            spawnTimeout = setTimeout(spawnBubbleLoop, spawnRate);
+        }
+
+        // --- Tworzenie Pojedynczej Bańki ---
+        function createBubble() {
+            const bubble = document.createElement('div');
+            bubble.classList.add('bubble');
+            bubble.innerText = '🫧';
+
+            // Losowa pozycja (z marginesem, żeby nie wyszła poza ekran)
+            const size = 80; // Rozmiar w px (zdefiniowany w CSS)
+            const maxX = window.innerWidth - size;
+            const maxY = window.innerHeight - size;
+            
+            const x = Math.random() * maxX;
+            const y = Math.random() * maxY;
+
+            bubble.style.left = x + 'px';
+            bubble.style.top = y + 'px';
+
+            // Animacja zmniejszania się (wizualizacja czasu)
+            // Ustawiamy transition na 'currentLifetime', żeby płynnie malała do zera
+            bubble.style.transition = `transform ${currentLifetime}ms linear`;
+            
+            // Obsługa kliknięcia/dotknięcia
+            // Używamy 'pointerdown' dla szybszej reakcji niż 'click'
+            bubble.addEventListener('pointerdown', (e) => popBubble(e, bubble, bubbleObj));
+
+            gameArea.appendChild(bubble);
+
+            // Hack, żeby wymusić przeliczenie stylu przed dodaniem klasy transform
+            // (potrzebne do animacji CSS transition)
+            requestAnimationFrame(() => {
+                bubble.style.transform = 'scale(0)'; 
+            });
+
+            // Timer śmierci bańki (gdy nie zdążysz)
+            const deathTimer = setTimeout(() => {
+                if (gameActive) {
+                    gameOver("Nie zdążyłeś zbić bańki!");
+                }
+            }, currentLifetime);
+
+            const bubbleObj = { el: bubble, timer: deathTimer };
+            activeBubbles.push(bubbleObj);
+        }
+
+        // --- Zbijanie Bańki ---
+        function popBubble(e, bubbleEl, bubbleObj) {
+            e.stopPropagation(); // Ważne: zapobiega kliknięciu w tło!
+            if (!gameActive) return;
+
+            // Zatrzymaj timer śmierci tej konkretnej bańki
+            clearTimeout(bubbleObj.timer);
+
+            // Usuń z tablicy aktywnych
+            activeBubbles = activeBubbles.filter(b => b !== bubbleObj);
+
+            // Efekt wizualny pęknięcia
+            createSparkle(parseInt(bubbleEl.style.left), parseInt(bubbleEl.style.top));
+            bubbleEl.remove();
+
+            // Punkty
+            score++;
+            scoreEl.innerText = score;
+            dawid108++;
+            localStorage.setItem("dawid108", dawid108);
+            console.log("dawid108:", dawid108);
+
+            // Zwiększanie trudności
+            increaseDifficulty();
+        }
+
+        // --- Efekt "Błysku" (✨) ---
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.classList.add('sparkle');
+            sparkle.innerText = '✨';
+            sparkle.style.left = (x + 20) + 'px'; // +20 żeby było na środku po byłej bańce
+            sparkle.style.top = (y + 20) + 'px';
+            gameArea.appendChild(sparkle);
+
+            // Usuń element po zakończeniu animacji
+            setTimeout(() => sparkle.remove(), 500);
+        }
+
+        // --- Logika Kliknięcia w Tło (Pudło) ---
+        gameArea.addEventListener('pointerdown', (e) => {
+            if (!gameActive) return;
+            // Jeśli event dotarł tutaj, znaczy że nie kliknięto w bańkę 
+            // (bo bańka ma stopPropagation)
+            gameOver("Pudło! Kliknąłeś w tło.");
+        });
+
+        // --- Skalowanie Trudności ---
+        function increaseDifficulty() {
+            // Skracamy czas życia (min. 600ms)
+            if (currentLifetime > 600) {
+                currentLifetime -= 30; // -30ms co punkt
+            }
+
+            // Przyspieszamy pojawianie się (min. 400ms)
+            if (spawnRate > 400) {
+                spawnRate -= 15; // -15ms co punkt
+            }
+        }
+
+        // --- Koniec Gry ---
+        function gameOver(reason) {
+            gameActive = false;
+            clearTimeout(spawnTimeout);
+            
+            // Zatrzymaj wszystkie istniejące bańki
+            activeBubbles.forEach(b => clearTimeout(b.timer));
+
+            // Obsługa LocalStorage
+            let bestScore = localStorage.getItem('banki') || 0;
+            if (score > parseInt(bestScore)) {
+                bestScore = score;
+                localStorage.setItem('banki', bestScore);
+            }
+
+            // Wypełnij modal
+            finalScoreEl.innerText = score;
+            bestScoreEl.innerText = bestScore;
+            reasonTextEl.innerText = reason; // Wyświetl powód przegranej
+            
+            modal.style.display = 'flex';
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        // Uruchom grę na start
+        startGame();
+
+    </script>
+</body>
+</html>
