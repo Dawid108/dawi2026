@@ -191,7 +191,7 @@
         <h2>Koniec Gry!</h2>
         <div class="stat-box" style="display:none">Wynik: <span id="final-score" class="highlight">0</span></div>
         <div class="stat-box" style="display:none">Rekord: <span id="best-score" class="highlight">0</span></div>
-        <button onclick="startGameWrapper()">Start Gry ▶️</button>
+        <button onclick="startGameWrapper()">Start Gry</button>
     </div>
 
 <script>
@@ -265,34 +265,39 @@
         modalBtn.onclick = startGame; 
         startGame();
     }
-
-    function bonk(e) {
+function bonk(e) {
         if (!e.isTrusted) return;
         
-        // --- KLUCZOWA ZMIANA 1: Zatrzymujemy propagację ---
-        // Dzięki temu kliknięcie w krecika nie jest liczone jako kliknięcie w dziurę (pudło)
-        e.stopPropagation(); 
+        // Zatrzymujemy bąbelkowanie, by kliknięcie nie przeszło na dziurę
+        e.stopPropagation();
+        e.preventDefault(); // Ważne dla urządzeń dotykowych
 
         const hole = this.parentNode;
+        
+        // Sprawdzamy, czy krecik jest na górze
         if(!hole.classList.contains('up')) return;
 
         score++;
         dawid108++;
         localStorage.setItem("dawid108", dawid108);
-        console.log("dawid108:", dawid108);
-        hole.classList.remove('up');
+        
+        hole.classList.remove('up'); // Krecik znika
         scoreDisplay.textContent = score;
 
         clearTimeout(moleTimeout);
         setTimeout(() => peep(), 100);
     }
 
-    // --- KLUCZOWA ZMIANA 2: Funkcja obsługująca pudło ---
     function miss(e) {
-        if (!gameStarted || timeUp) return; // Jeśli gra nie trwa, ignoruj
+        if (!gameStarted || timeUp) return;
         
-        // Jeśli kliknęliśmy w dziurę (a bonk nie zatrzymał zdarzenia), to znaczy że pudło
-        endGame("miss");
+        // SPRAWDZENIE: Jeśli kliknięty element (e.target) to dziura (hole) 
+        // LUB jeśli kliknięto w dziurę, która NIE ma klasy 'up', kończymy grę.
+        const clickedHole = e.currentTarget;
+        
+        if (!clickedHole.classList.contains('up')) {
+            endGame("miss");
+        }
     }
 
     function endGame(reason) {
