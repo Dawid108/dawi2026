@@ -148,7 +148,7 @@ footer{font-size:12px;text-align:center;opacity:0.9;margin-top:4px}
       </div>
     </div>
     <footer>
-      <small>Steruj palcem lub myszką. Omijaj bomby 💣</small>
+      <small>Steruj palcem lub myszką. Omijaj asteroidy ☄️.</small>
     </footer>
   </div>
 
@@ -231,7 +231,7 @@ function moveUfoTo(x){
 function createBomb(){
   const b = document.createElement('div');
   b.className = 'bomb';
-  b.textContent = '💣';
+  b.textContent = '☄️';
   const pf = pfBounds();
   const minLeft = 6;
   const maxLeft = pf.width - 44 - 6;
