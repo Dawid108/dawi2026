@@ -57,8 +57,8 @@
             line-height: 80px;
             cursor: pointer;
             z-index: 5;
-            /* Animacja pojawiania się */
-            animation: popIn 0.2s ease-out;
+            /* Animacja pojawiania się (pop-up) */
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             /* Wyśrodkowanie punktu kliknięcia */
             transform-origin: center center; 
         }
@@ -125,9 +125,8 @@
 
         /* Animacje */
         @keyframes popIn {
-            0% { transform: scale(0); }
-            80% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+            0% { transform: scale(0); opacity: 0;}
+            100% { transform: scale(1); opacity: 1;}
         }
 
         @keyframes fadeUp {
@@ -166,8 +165,8 @@
         let spawnTimeout;
 
         // --- Parametry Trudności ---
-        let currentLifetime = 5000; // Czas życia bańki w ms (startowo 2s)
-        let spawnRate = 1000;       // Częstotliwość pojawiania się (startowo 1s)
+        let currentLifetime = 4000; // ZMIANA: Startowo 4 sekundy (wolniej znikają)
+        let spawnRate = 1500;       // ZMIANA: Startowo 1.5 sekundy (wolniej się pojawiają)
 
         // --- Start Gry ---
         function startGame() {
@@ -177,12 +176,12 @@
             modal.style.display = 'none';
             
             // Reset trudności
-            currentLifetime = 5000;
-            spawnRate = 1000;
+            currentLifetime = 4000; 
+            spawnRate = 1500;
 
             // Wyczyść planszę
             activeBubbles.forEach(b => {
-                clearTimeout(b.timer);
+                if(b.timer) clearTimeout(b.timer);
                 if(b.el.parentNode) b.el.remove();
             });
             activeBubbles = [];
@@ -207,8 +206,8 @@
             bubble.classList.add('bubble');
             bubble.innerText = '🫧';
 
-            // Losowa pozycja (z marginesem, żeby nie wyszła poza ekran)
-            const size = 80; // Rozmiar w px (zdefiniowany w CSS)
+            // Losowa pozycja (z marginesem)
+            const size = 80; 
             const maxX = window.innerWidth - size;
             const maxY = window.innerHeight - size;
             
@@ -218,28 +217,38 @@
             bubble.style.left = x + 'px';
             bubble.style.top = y + 'px';
 
-            // Animacja zmniejszania się (wizualizacja czasu)
-            // Ustawiamy transition na 'currentLifetime', żeby płynnie malała do zera
-            bubble.style.transition = `transform ${currentLifetime}ms linear`;
-            
-            // Obsługa kliknięcia/dotknięcia
-            // Używamy 'pointerdown' dla szybszej reakcji niż 'click'
+            // ZMIANA: Sprawdzenie czy to pierwsza bańka
+            // Pierwsza bańka to taka, gdy wynik jest 0 I nie ma innych aktywnych
+            const isFirstBubble = (score === 0 && activeBubbles.length === 0);
+
+            let deathTimer = null;
+
+            if (isFirstBubble) {
+                // ZMIANA: Pierwsza bańka nie znika
+                bubble.style.transform = 'scale(1)'; // Ustawiamy stały rozmiar
+                // Nie ustawiamy transition ani deathTimer
+            } else {
+                // Standardowe bańki
+                // Animacja zmniejszania się (wizualizacja czasu)
+                bubble.style.transition = `transform ${currentLifetime}ms linear`;
+                
+                // Hack, żeby wymusić start animacji po dodaniu do DOM
+                setTimeout(() => {
+                     bubble.style.transform = 'scale(0)'; 
+                }, 400); // Małe opóźnienie dla pewności
+
+                // Timer śmierci
+                deathTimer = setTimeout(() => {
+                    if (gameActive) {
+                        gameOver("Nie zdążyłeś zbić bańki!");
+                    }
+                }, currentLifetime);
+            }
+
+            // Obsługa kliknięcia
             bubble.addEventListener('pointerdown', (e) => popBubble(e, bubble, bubbleObj));
 
             gameArea.appendChild(bubble);
-
-            // Hack, żeby wymusić przeliczenie stylu przed dodaniem klasy transform
-            // (potrzebne do animacji CSS transition)
-            requestAnimationFrame(() => {
-                bubble.style.transform = 'scale(0)'; 
-            });
-
-            // Timer śmierci bańki (gdy nie zdążysz)
-            const deathTimer = setTimeout(() => {
-                if (gameActive) {
-                    gameOver("Nie zdążyłeś zbić bańki!");
-                }
-            }, currentLifetime);
 
             const bubbleObj = { el: bubble, timer: deathTimer };
             activeBubbles.push(bubbleObj);
@@ -250,8 +259,8 @@
             e.stopPropagation(); // Ważne: zapobiega kliknięciu w tło!
             if (!gameActive) return;
 
-            // Zatrzymaj timer śmierci tej konkretnej bańki
-            clearTimeout(bubbleObj.timer);
+            // Zatrzymaj timer śmierci (jeśli istnieje)
+            if (bubbleObj.timer) clearTimeout(bubbleObj.timer);
 
             // Usuń z tablicy aktywnych
             activeBubbles = activeBubbles.filter(b => b !== bubbleObj);
@@ -276,19 +285,16 @@
             const sparkle = document.createElement('div');
             sparkle.classList.add('sparkle');
             sparkle.innerText = '✨';
-            sparkle.style.left = (x + 20) + 'px'; // +20 żeby było na środku po byłej bańce
+            sparkle.style.left = (x + 20) + 'px'; 
             sparkle.style.top = (y + 20) + 'px';
             gameArea.appendChild(sparkle);
 
-            // Usuń element po zakończeniu animacji
             setTimeout(() => sparkle.remove(), 500);
         }
 
         // --- Logika Kliknięcia w Tło (Pudło) ---
         gameArea.addEventListener('pointerdown', (e) => {
             if (!gameActive) return;
-            // Jeśli event dotarł tutaj, znaczy że nie kliknięto w bańkę 
-            // (bo bańka ma stopPropagation)
             gameOver("Pudło! Kliknąłeś w tło.");
         });
 
@@ -296,12 +302,12 @@
         function increaseDifficulty() {
             // Skracamy czas życia (min. 600ms)
             if (currentLifetime > 600) {
-                currentLifetime -= 30; // -30ms co punkt
+                currentLifetime -= 50; // Szybciej skracamy czas
             }
 
             // Przyspieszamy pojawianie się (min. 400ms)
             if (spawnRate > 400) {
-                spawnRate -= 15; // -15ms co punkt
+                spawnRate -= 30; 
             }
         }
 
@@ -311,7 +317,9 @@
             clearTimeout(spawnTimeout);
             
             // Zatrzymaj wszystkie istniejące bańki
-            activeBubbles.forEach(b => clearTimeout(b.timer));
+            activeBubbles.forEach(b => {
+                if(b.timer) clearTimeout(b.timer);
+            });
 
             // Obsługa LocalStorage
             let bestScore = localStorage.getItem('banki') || 0;
@@ -323,7 +331,7 @@
             // Wypełnij modal
             finalScoreEl.innerText = score;
             bestScoreEl.innerText = bestScore;
-            reasonTextEl.innerText = reason; // Wyświetl powód przegranej
+            reasonTextEl.innerText = reason;
             
             modal.style.display = 'flex';
         }
@@ -332,7 +340,6 @@
             startGame();
         }
 
-        // Uruchom grę na start
         startGame();
 
     </script>
