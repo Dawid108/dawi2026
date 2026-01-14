@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Zombi</title>
+    <meta name="description" content="Zombi">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#2d3436">
+
+    <script src="./script.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #2d3436; /* Ciemne tło pola bitwy */
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #game-area {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #1e272e 0%, #2d3436 90%, #44bd32 90%, #2ecc71 100%);
+        }
+
+        #fort-line {
+            position: absolute;
+            bottom: 10%;
+            width: 100%;
+            height: 5px;
+            background-color: #7f8c8d;
+            border-top: 2px solid #95a5a6;
+        }
+
+        #fort-icon {
+            position: absolute;
+            bottom: 1%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 50px;
+            z-index: 10;
+        }
+
+        .zombie {
+            position: absolute;
+            font-size: 45px;
+            cursor: crosshair;
+            z-index: 5;
+            transition: transform 0.1s;
+        }
+
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 15px;
+            z-index: 20;
+            border: 1px solid #7f8c8d;
+        }
+
+        /* Modal Końca Gry */
+        #game-over-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        #game-over-modal h1 {
+            font-size: 45px;
+            color: #ff7675;
+            margin-bottom: 20px;
+        }
+
+        .result-item {
+            font-size: 28px;
+            margin: 10px 0;
+        }
+
+        #restart-btn {
+            margin-top: 30px;
+            padding: 15px 50px;
+            font-size: 22px;
+            background-color: #d63031;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(214, 48, 49, 0.4);
+        }
+
+        #restart-btn:hover {
+            background-color: #ff7675;
+        }
+
+        /* Animacja trafienia */
+        .dead {
+            pointer-events: none;
+            animation: die 0.4s forwards;
+        }
+
+        @keyframes die {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: scale(0) rotate(90deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-area">
+        <div id="score-board">Punkty: <span id="score">0</span></div>
+        <div id="fort-line"></div>
+        <div id="fort-icon">🏰</div>
+    </div>
+
+    <div id="game-over-modal">
+        <h1>TWÓRCA ZDOBYTY! 🧟</h1>
+        <div class="result-item">Wynik: <span id="final-score">0</span></div>
+        <div class="result-item">Rekord: <span id="best-score">0</span></div>
+        <button id="restart-btn" onclick="restartGame()">Nowa Gra</button>
+    </div>
+
+    <script>
+        let dawid108 = localStorage.getItem("dawid108") || 0;
+        const gameArea = document.getElementById('game-area');
+        const scoreEl = document.getElementById('score');
+        const modal = document.getElementById('game-over-modal');
+        const finalScoreEl = document.getElementById('final-score');
+        const bestScoreEl = document.getElementById('best-score');
+
+        let score = 0;
+        let gameActive = false;
+        let zombies = [];
+        let spawnTimeout;
+        
+        // Parametry trudności
+        let zombieBaseSpeed = 1.0;  // Początkowa prędkość
+        let spawnRate = 2000;       // Początkowy czas między spawnem (2 sekundy)
+        let maxAtOnce = 1;          // Ile zombiaków na raz może się pojawić
+
+        function startGame() {
+            score = 0;
+            zombieBaseSpeed = 1.0;
+            spawnRate = 2000;
+            maxAtOnce = 1;
+            scoreEl.innerText = score;
+            gameActive = true;
+            modal.style.display = 'none';
+            
+            // Wyczyść stare zombiaki
+            zombies.forEach(z => z.el.remove());
+            zombies = [];
+
+            scheduleSpawn();
+            requestAnimationFrame(update);
+        }
+
+        function scheduleSpawn() {
+            if (!gameActive) return;
+            
+            // Losujemy ile zombiaków się pojawi (od 1 do maxAtOnce)
+            const count = Math.floor(Math.random() * maxAtOnce) + 1;
+            
+            for(let i = 0; i < count; i++) {
+                createZombie();
+            }
+
+            spawnTimeout = setTimeout(scheduleSpawn, spawnRate);
+        }
+
+        function createZombie() {
+            const el = document.createElement('div');
+            el.className = 'zombie';
+            el.innerText = '🧟';
+            
+            const x = Math.random() * (window.innerWidth - 50);
+            el.style.left = x + 'px';
+            el.style.top = '-60px';
+            
+            // Reakcja na kliknięcie / dotyk
+            el.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                killZombie(el);
+            });
+
+            gameArea.appendChild(el);
+            
+            zombies.push({
+                el: el,
+                y: -60,
+                speed: zombieBaseSpeed + (Math.random() * 0.5) // Lekkie zróżnicowanie prędkości
+            });
+        }
+
+        function killZombie(el) {
+            if (!gameActive) return;
+            
+            // Znajdź i usuń z tablicy logiki, ale zostaw w DOM dla animacji
+            const index = zombies.findIndex(z => z.el === el);
+            if (index > -1) {
+                zombies.splice(index, 1);
+                el.classList.add('dead');
+                setTimeout(() => el.remove(), 400);
+                
+                score++;
+                scoreEl.innerText = score;
+                dawid108++;
+                localStorage.setItem("dawid108", dawid108);
+                console.log("dawid108:", dawid108);
+                updateDifficulty();
+            }
+        }
+
+        function updateDifficulty() {
+            // Co 10 punktów przyspieszamy zombiaki
+            if (score % 10 === 0) {
+                zombieBaseSpeed += 0.2;
+                // Co 10 punktów pojawiają się częściej (zmniejszamy spawnRate)
+                if (spawnRate > 600) spawnRate -= 150;
+            }
+
+            // Co 30 punktów zwiększamy ilość zombiaków na raz
+            if (score % 30 === 0) {
+                maxAtOnce += 1;
+            }
+        }
+
+        function update() {
+            if (!gameActive) return;
+
+            const limit = window.innerHeight * 0.8; // Linia fortu (80% wysokości)
+
+            for (let i = zombies.length - 1; i >= 0; i--) {
+                const z = zombies[i];
+                z.y += z.speed;
+                z.el.style.top = z.y + 'px';
+
+                // Sprawdź czy zombiak dotknął fortu
+                if (z.y + 40 >= limit) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        function gameOver() {
+            gameActive = false;
+            clearTimeout(spawnTimeout);
+            
+            let bestScore = localStorage.getItem('zombi') || 0;
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('zombi', bestScore);
+            }
+
+            finalScoreEl.innerText = score;
+            bestScoreEl.innerText = bestScore;
+            modal.style.display = 'flex';
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        // Start gry przy załadowaniu
+        startGame();
+
+    </script>
+</body>
+</html>
