@@ -166,7 +166,7 @@
 
         // --- Parametry Trudności ---
         let currentLifetime = 4000; // ZMIANA: Startowo 4 sekundy (wolniej znikają)
-        let spawnRate = 1500;       // ZMIANA: Startowo 1.5 sekundy (wolniej się pojawiają)
+        let spawnRate = 1000;       // ZMIANA: Startowo 1.5 sekundy (wolniej się pojawiają)
 
         // --- Start Gry ---
         function startGame() {
@@ -177,7 +177,7 @@
             
             // Reset trudności
             currentLifetime = 4000; 
-            spawnRate = 1500;
+            spawnRate = 1000;
 
             // Wyczyść planszę
             activeBubbles.forEach(b => {
