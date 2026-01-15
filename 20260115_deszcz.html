@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Deszcz</title>
+    <meta name="description" content="Deszcz">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+
+    <script src="./script.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #2c3e50; /* Ciemne, deszczowe niebo */
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #2c3e50, #000000);
+        }
+
+        #basket {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            font-size: 60px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform: translateX(-50%);
+            transition: left 0.1s ease-out;
+            z-index: 10;
+        }
+
+        .drop, .bolt {
+            position: absolute;
+            top: -60px;
+            font-size: 40px;
+            z-index: 5;
+        }
+
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            z-index: 100;
+        }
+
+        /* Modal Końca Gry */
+        #game-over-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .modal-box {
+            background: #34495e;
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #f1c40f;
+            box-shadow: 0 0 20px #f1c40f;
+        }
+
+        h1 { color: #e74c3c; margin-top: 0; }
+        .stat { font-size: 28px; margin: 15px 0; }
+
+        #restart-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 15px 50px;
+            font-size: 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        #restart-btn:active { transform: scale(0.9); }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="score-board">Punkty: <span id="score">0</span></div>
+        <div id="basket">🧺</div>
+    </div>
+
+    <div id="game-over-modal">
+        <div class="modal-box">
+            <h1 id="fail-reason">KONIEC GRY!</h1>
+            <div class="stat">Wynik: <span id="final-score">0</span></div>
+            <div class="stat">Rekord: <span id="best-score">0</span></div>
+            <button id="restart-btn" onclick="restartGame()">Nowa Gra</button>
+        </div>
+    </div>
+
+    <script>
+        let dawid108 = localStorage.getItem("dawid108") || 0;
+        const container = document.getElementById('game-container');
+        const basket = document.getElementById('basket');
+        const scoreEl = document.getElementById('score');
+        const modal = document.getElementById('game-over-modal');
+
+        let score = 0;
+        let gameActive = false;
+        let basketX = window.innerWidth / 2;
+        let items = [];
+        let spawnTimer;
+        
+        // Trudność
+        let baseSpeed = 3;
+        let spawnRate = 1200;
+
+        // --- STEROWANIE ---
+
+        // Klawiatura (PC)
+        window.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            const step = 40;
+            if (e.key === 'ArrowLeft') basketX -= step;
+            if (e.key === 'ArrowRight') basketX += step;
+            updateBasketPos();
+        });
+
+        // Dotyk (Telefon)
+        window.addEventListener('touchstart', (e) => {
+            if (!gameActive) return;
+            const touchX = e.touches[0].clientX;
+            const screenWidth = window.innerWidth;
+            
+            if (touchX < screenWidth / 2) {
+                basketX -= 50; // Ruch w lewo
+            } else {
+                basketX += 50; // Ruch w prawo
+            }
+            updateBasketPos();
+        });
+
+        function updateBasketPos() {
+            // Ograniczenia ekranu
+            if (basketX < 30) basketX = 30;
+            if (basketX > window.innerWidth - 30) basketX = window.innerWidth - 30;
+            basket.style.left = basketX + 'px';
+        }
+
+        // --- LOGIKA GRY ---
+
+        function startGame() {
+            score = 0;
+            baseSpeed = 3;
+            spawnRate = 1200;
+            items = [];
+            basketX = window.innerWidth / 2;
+            gameActive = true;
+            
+            scoreEl.innerText = score;
+            modal.style.display = 'none';
+            updateBasketPos();
+            
+            // Wyczyść stare elementy
+            document.querySelectorAll('.drop, .bolt').forEach(el => el.remove());
+            
+            clearTimeout(spawnTimer);
+            spawnItem();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function spawnItem() {
+            if (!gameActive) return;
+
+            const el = document.createElement('div');
+            const isBolt = (score > 0 && score % 10 === 0 && Math.random() > 0.5);
+            
+            el.className = isBolt ? 'bolt' : 'drop';
+            el.innerText = isBolt ? '⚡' : '💧';
+            
+            const x = Math.random() * (window.innerWidth - 40);
+            el.style.left = x + 'px';
+            container.appendChild(el);
+
+            items.push({
+                el: el,
+                y: -60,
+                x: x,
+                type: isBolt ? 'bolt' : 'drop',
+                speed: isBolt ? (baseSpeed * 2) : baseSpeed
+            });
+
+            // Przyspieszanie spawnowania
+            let nextSpawn = spawnRate - (score * 10);
+            if (nextSpawn < 400) nextSpawn = 400;
+
+            spawnTimer = setTimeout(spawnItem, nextSpawn);
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                item.y += item.speed;
+                item.el.style.top = item.y + 'px';
+
+                // Kolizja z koszykiem
+                const basketRect = basket.getBoundingClientRect();
+                const itemRect = item.el.getBoundingClientRect();
+
+                if (checkCollision(basketRect, itemRect)) {
+                    if (item.type === 'drop') {
+                        score++;
+                        scoreEl.innerText = score;
+                        dawid108++;
+                        localStorage.setItem("dawid108", dawid108);
+                        console.log("dawid108:", dawid108);
+                        baseSpeed += 0.1; // Zwiększanie prędkości kropli
+                        item.el.remove();
+                        items.splice(i, 1);
+                    } else {
+                        gameOver("RAŻENIE PIORUNEM! ⚡");
+                        return;
+                    }
+                } 
+                // Kropla spadła na dół
+                else if (item.y > window.innerHeight) {
+                    if (item.type === 'drop') {
+                        gameOver("KROPLA UCIEKŁA! 💧");
+                        return;
+                    } else {
+                        // Piorun ominięty - usuwamy bezpiecznie
+                        item.el.remove();
+                        items.splice(i, 1);
+                    }
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function checkCollision(r1, r2) {
+            return !(r1.left > r2.right || 
+                     r1.right < r2.left || 
+                     r1.top > r2.bottom || 
+                     r1.bottom < r2.top);
+        }
+
+        function gameOver(reason) {
+            gameActive = false;
+            document.getElementById('fail-reason').innerText = reason;
+            
+            let record = localStorage.getItem('deszcz') || 0;
+            if (score > record) {
+                record = score;
+                localStorage.setItem('deszcz', record);
+            }
+
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('best-score').innerText = record;
+            modal.style.display = 'flex';
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        // Start
+        startGame();
+    </script>
+</body>
+</html>
