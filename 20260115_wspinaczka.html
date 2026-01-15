@@ -142,7 +142,7 @@
         let gameActive = false;
         let platforms = [];
         let cameraY = 0;
-        let scrollSpeed = 0.5; // Startowa prędkość przewijania
+        let scrollSpeed = 2; // Startowa prędkość przewijania
         
         // Fizyka gracza
         let playerX = window.innerWidth / 2;
@@ -167,7 +167,7 @@
         function initGame() {
             score = 0;
             cameraY = 0;
-            scrollSpeed = 0.5;
+            scrollSpeed = 2;
             playerY = 200;
             velocityY = 0;
             scoreEl.innerText = score;
@@ -211,7 +211,7 @@
             // 2. Ruch kamery (przewijanie w górę)
             cameraY -= scrollSpeed;
             // Trudność: prędkość rośnie wraz z punktami
-            scrollSpeed = 0.5 + (score * 0.05);
+            scrollSpeed = 2 + (score * 0.05);
 
             // 3. Sprawdzanie kolizji z platformami (tylko gdy gracz spada)
             if (velocityY > 0) {
