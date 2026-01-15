@@ -101,43 +101,51 @@
     if (dawid108 === null) return;
 
     // ZMIENNE DLA GIER
-    let goldrun = localStorage.getItem("goldrun") || 0;
     let zabka = localStorage.getItem("zabka") || 0;
     let kosmos = localStorage.getItem("kosmos") || 0;
     let halloween = localStorage.getItem("halloween") || 0;
+    let zombi = localStorage.getItem("zombi") || 0;
+    let jablko = localStorage.getItem("jablko") || 0;
     let samolot = localStorage.getItem("samolot") || 0;
+    let bieg = localStorage.getItem("bieg") || 0;
+    let banki = localStorage.getItem("banki") || 0;
+    let bloczki = localStorage.getItem("bloczki") || 0;
+    let dinozaur = localStorage.getItem("dinozaur") || 0;
+    let flagi = localStorage.getItem("flagi") || 0;
+    let goldrun = localStorage.getItem("goldrun") || 0;
+    let gwiazdor = localStorage.getItem("gwiazdor") || 0;
+    let karne = localStorage.getItem("karne") || 0;
+    let krecik = localStorage.getItem("krecik") || 0;
+    let szkola = localStorage.getItem("szkola") || 0;
+    let tenis = localStorage.getItem("tenis") || 0;
     let ufo = localStorage.getItem("ufo") || 0;
     let waz = localStorage.getItem("waz") || 0;
-    let gwiazdor = localStorage.getItem("gwiazdor") || 0;
-    let dinozaur = localStorage.getItem("dinozaur") || 0;
-    let bieg = localStorage.getItem("bieg") || 0;
-    let jablko = localStorage.getItem("jablko") || 0;
     let wedkarstwo = localStorage.getItem("wedkarstwo") || 0;
-    let bloczki = localStorage.getItem("bloczki") || 0;
-    let tenis = localStorage.getItem("tenis") || 0;
-    let krecik = localStorage.getItem("krecik") || 0;
-    let karne = localStorage.getItem("karne") || 0;
-    let flagi = localStorage.getItem("flagi") || 0;
+    let wspinaczka = localStorage.getItem("wspinaczka") || 0;
 
     let url = "https://dawid108.infinityfree.me/receive.html"
         + "?dawid108=" + encodeURIComponent(dawid108)
-        + "&goldrun=" + encodeURIComponent(goldrun)
         + "&zabka=" + encodeURIComponent(zabka)
         + "&kosmos=" + encodeURIComponent(kosmos)
         + "&halloween=" + encodeURIComponent(halloween)
+        + "&zombi=" + encodeURIComponent(zombi)
+        + "&jablko=" + encodeURIComponent(jablko)
         + "&samolot=" + encodeURIComponent(samolot)
+        + "&bieg=" + encodeURIComponent(bieg)
+        + "&banki=" + encodeURIComponent(banki)
+        + "&bloczki=" + encodeURIComponent(bloczki)
+        + "&dinozaur=" + encodeURIComponent(dinozaur)
+        + "&flagi=" + encodeURIComponent(flagi)
+        + "&goldrun=" + encodeURIComponent(goldrun)
+        + "&gwiazdor=" + encodeURIComponent(gwiazdor)
+        + "&karne=" + encodeURIComponent(karne)
+        + "&krecik=" + encodeURIComponent(krecik)
+        + "&szkola=" + encodeURIComponent(szkola)
+        + "&tenis=" + encodeURIComponent(tenis)
         + "&ufo=" + encodeURIComponent(ufo)
         + "&waz=" + encodeURIComponent(waz)
-        + "&gwiazdor=" + encodeURIComponent(gwiazdor)
-        + "&dinozaur=" + encodeURIComponent(dinozaur)
-        + "&bieg=" + encodeURIComponent(bieg)
-        + "&jablko=" + encodeURIComponent(jablko)
         + "&wedkarstwo=" + encodeURIComponent(wedkarstwo)
-        + "&bloczki=" + encodeURIComponent(bloczki)
-        + "&tenis=" + encodeURIComponent(tenis)
-        + "&krecik=" + encodeURIComponent(krecik)
-        + "&karne=" + encodeURIComponent(karne)
-        + "&flagi=" + encodeURIComponent(flagi);
+        + "&wspinaczka=" + encodeURIComponent(wspinaczka);
 
     if (!sessionStorage.getItem("sentToInfinity")) {
         sessionStorage.setItem("sentToInfinity", "1");
