@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Wspinaczka</title>
+    <meta name="description" content="Wspinaczka">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#1e3799">
+
+    <script src="./script.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #1e3799, #4a69bd); /* Niebo */
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            z-index: 100;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        #player {
+            position: absolute;
+            font-size: 40px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            /* Płynne podążanie za kursorem tylko w osi X */
+            transition: left 0.05s linear;
+        }
+
+        .platform {
+            position: absolute;
+            font-size: 45px;
+            width: 80px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .eagle {
+            position: absolute;
+            font-size: 35px;
+            z-index: 5;
+        }
+
+        /* Ekran końcowy */
+        #game-over-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .modal-content {
+            background: #2f3640;
+            padding: 30px;
+            border-radius: 20px;
+            border: 4px solid #fbc531;
+        }
+
+        h1 { color: #fbc531; margin-top: 0; }
+        .stat { font-size: 24px; margin: 10px 0; }
+
+        #restart-btn {
+            background: #44bd32;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        #restart-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="score-board">Punkty: <span id="score">0</span></div>
+        <div id="player">🐥</div>
+    </div>
+
+    <div id="game-over-modal">
+        <div class="modal-content">
+            <h1>Koniec Gry!</h1>
+            <div class="stat">Wynik: <span id="final-score">0</span></div>
+            <div class="stat">Rekord: <span id="best-score">0</span></div>
+            <button id="restart-btn" onclick="restartGame()">Nowa Gra</button>
+        </div>
+    </div>
+
+    <script>
+        let dawid108 = localStorage.getItem("dawid108") || 0;
+        const container = document.getElementById('game-container');
+        const playerEl = document.getElementById('player');
+        const scoreEl = document.getElementById('score');
+        const modal = document.getElementById('game-over-modal');
+
+        // Ustawienia gry
+        let score = 0;
+        let gameActive = false;
+        let platforms = [];
+        let cameraY = 0;
+        let scrollSpeed = 0.5; // Startowa prędkość przewijania
+        
+        // Fizyka gracza
+        let playerX = window.innerWidth / 2;
+        let playerY = 200;
+        let velocityY = 0;
+        const gravity = 0.4;
+        const jumpStrength = -12;
+        
+        // Sterowanie
+        function updatePlayerPos(x) {
+            if (!gameActive) return;
+            playerX = x - 20; // Środek emotki
+            playerEl.style.left = playerX + 'px';
+        }
+
+        window.addEventListener('mousemove', (e) => updatePlayerPos(e.clientX));
+        window.addEventListener('touchmove', (e) => {
+            updatePlayerPos(e.touches[0].clientX);
+            e.preventDefault();
+        }, {passive: false});
+
+        function initGame() {
+            score = 0;
+            cameraY = 0;
+            scrollSpeed = 0.5;
+            playerY = 200;
+            velocityY = 0;
+            scoreEl.innerText = score;
+            platforms = [];
+            
+            // Wyczyść stare platformy
+            document.querySelectorAll('.platform').forEach(p => p.remove());
+            
+            // Pierwsza platforma pod graczem
+            createPlatform(window.innerHeight - 100);
+            
+            // Wygeneruj startowe platformy
+            for (let i = 1; i < 7; i++) {
+                createPlatform(window.innerHeight - 100 - (i * 150));
+            }
+            
+            gameActive = true;
+            modal.style.display = 'none';
+            requestAnimationFrame(gameLoop);
+        }
+
+        function createPlatform(yPos) {
+            const p = document.createElement('div');
+            p.className = 'platform';
+            p.innerText = '☁️';
+            const x = Math.random() * (window.innerWidth - 80);
+            p.style.left = x + 'px';
+            p.dataset.y = yPos; // Logiczna pozycja Y
+            p.dataset.landed = "false";
+            container.appendChild(p);
+            platforms.push({el: p, x: x, y: yPos, landed: false});
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+
+            // 1. Grawitacja i ruch gracza
+            velocityY += gravity;
+            playerY += velocityY;
+
+            // 2. Ruch kamery (przewijanie w górę)
+            cameraY -= scrollSpeed;
+            // Trudność: prędkość rośnie wraz z punktami
+            scrollSpeed = 0.5 + (score * 0.05);
+
+            // 3. Sprawdzanie kolizji z platformami (tylko gdy gracz spada)
+            if (velocityY > 0) {
+                platforms.forEach(p => {
+                    if (playerY + 40 > p.y && 
+                        playerY + 40 < p.y + 20 && 
+                        playerX + 30 > p.x && 
+                        playerX < p.x + 60) {
+                        
+                        velocityY = jumpStrength;
+                        playerY = p.y - 40;
+
+                        if (p.landed === false) {
+                            p.landed = true;
+                            score++;
+                            scoreEl.innerText = score;
+                            dawid108++;
+                            localStorage.setItem("dawid108", dawid108);
+                            console.log("dawid108:", dawid108);
+                            // Dodaj nową platformę wyżej, gdy skoczymy na nową
+                            const highestY = Math.min(...platforms.map(pl => pl.y));
+                            createPlatform(highestY - 150);
+                        }
+                    }
+                });
+            }
+
+            // 4. Aktualizacja pozycji wizualnej
+            // playerY jest pozycją "świata", odejmujemy cameraY by uzyskać pozycję na ekranie
+            const visualY = playerY - cameraY;
+            playerEl.style.top = visualY + 'px';
+
+            platforms.forEach(p => {
+                p.el.style.top = (p.y - cameraY) + 'px';
+            });
+
+            // 5. Warunek przegranej
+            // Jeśli gracz wypadnie dołem ekranu (visualY > window.innerHeight)
+            if (visualY > window.innerHeight) {
+                gameOver();
+                return;
+            }
+
+            // Usuwanie starych platform, które wypadły dołem
+            if (platforms.length > 0 && platforms[0].y - cameraY > window.innerHeight) {
+                platforms[0].el.remove();
+                platforms.shift();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameActive = false;
+            let record = localStorage.getItem('wspinaczka') || 0;
+            if (score > record) {
+                record = score;
+                localStorage.setItem('wspinaczka', record);
+            }
+
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('best-score').innerText = record;
+            modal.style.display = 'flex';
+        }
+
+        function restartGame() {
+            initGame();
+        }
+
+        // Uruchomienie przy starcie
+        initGame();
+    </script>
+</body>
+</html>
