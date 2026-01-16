@@ -28,7 +28,7 @@
             overflow: hidden;
             touch-action: none; /* Blokada gestów systemowych */
             user-select: none;
-            height: 100vh;
+            height: 100svh;
             width: 100vw;
         }
 
@@ -235,7 +235,7 @@
                 // Hack, żeby wymusić start animacji po dodaniu do DOM
                 setTimeout(() => {
                      bubble.style.transform = 'scale(0)'; 
-                }, 450); // Małe opóźnienie dla pewności
+                }, 460); // Małe opóźnienie dla pewności
 
                 // Timer śmierci
                 deathTimer = setTimeout(() => {
