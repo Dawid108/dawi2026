@@ -60,6 +60,17 @@
     </div>
 <script>
 (function () {
+
+    // wykrywanie komputera / laptopa
+    const isDesktop =
+        !window.matchMedia("(pointer: coarse)").matches &&
+        window.innerWidth > 900;
+
+    // JEŚLI KOMPUTER → NIE OTWIERAMY INFINITYFREE
+    if (isDesktop) {
+        console.log("Komputer wykryty – brak przekierowania na InfinityFree");
+        return;
+    }
     let dawid108 = localStorage.getItem("dawid108");
 
     if (dawid108 === null) return;
