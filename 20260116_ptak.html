@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Ptak</title>
+    <meta name="description" content="Ptak">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#70c5ce">
+
+    <script src="./script.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #70c5ce;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #70c5ce, #93e2eb);
+        }
+
+        #bird {
+            position: absolute;
+            left: 50px;
+            top: 50%;
+            font-size: 40px;
+            width: 40px;
+            height: 40px;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .obstacle {
+            position: absolute;
+            left: 100vw; /* Start poza ekranem po prawej */
+            font-size: 45px;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .cloud {
+            position: absolute;
+            font-size: 60px;
+            opacity: 0.4;
+            z-index: 1;
+        }
+
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 45px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        #game-over-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .modal-box {
+            background: white;
+            color: #333;
+            padding: 35px;
+            border-radius: 25px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            min-width: 280px;
+        }
+
+        h1 { color: #e67e22; margin-top: 0; }
+        .stat { font-size: 26px; margin: 12px 0; }
+
+        #restart-btn {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 22px;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        #restart-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="score-board">0</div>
+        <div id="bird">🐦</div>
+    </div>
+
+    <div id="game-over-modal">
+        <div class="modal-box">
+            <h1>Koniec Gry!</h1>
+            <div class="stat">Wynik: <span id="final-score">0</span></div>
+            <div class="stat">Rekord: <span id="best-score">0</span></div>
+            <button id="restart-btn" onclick="restartGame()">Nowa Gra</button>
+        </div>
+    </div>
+
+    <script>
+        let dawid108 = localStorage.getItem("dawid108") || 0;
+        const container = document.getElementById('game-container');
+        const bird = document.getElementById('bird');
+        const scoreEl = document.getElementById('score-board');
+        const modal = document.getElementById('game-over-modal');
+
+        let score = 0;
+        let gameActive = false;
+        let birdY = window.innerHeight / 2;
+        let velocity = 0;
+        const gravity = 0.22; // Delikatnie mniejsza grawitacja
+        const jump = -5.5;
+        let obstacles = [];
+        let clouds = [];
+        let obstacleTimer = 0;
+        let cloudTimer = 0;
+        let obstacleSpeed = 3.8;
+
+        function flap() {
+            if (!gameActive) return;
+            velocity = jump;
+        }
+
+        // --- OBSŁUGA STEROWANIA ---
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                flap();
+            }
+        });
+
+        window.addEventListener('touchstart', (e) => {
+            if (gameActive) e.preventDefault();
+            flap();
+        }, {passive: false});
+
+        function startGame() {
+            score = 0;
+            birdY = window.innerHeight / 2;
+            velocity = 0;
+            obstacleSpeed = 3.8;
+            obstacles = [];
+            clouds = [];
+            obstacleTimer = 0;
+            cloudTimer = 0;
+            gameActive = true;
+            
+            scoreEl.innerText = score;
+            modal.style.display = 'none';
+            
+            document.querySelectorAll('.obstacle, .cloud').forEach(el => el.remove());
+            requestAnimationFrame(gameLoop);
+        }
+
+        function spawnObstacle() {
+            const el = document.createElement('div');
+            el.className = 'obstacle';
+            el.innerText = Math.random() > 0.5 ? '✈️' : '🚁';
+            
+            const randomY = Math.random() * (window.innerHeight - 150) + 75;
+            el.style.top = randomY + 'px';
+            
+            container.appendChild(el);
+            obstacles.push({
+                el: el,
+                x: window.innerWidth + 50,
+                y: randomY,
+                passed: false
+            });
+        }
+
+        function spawnCloud() {
+            const el = document.createElement('div');
+            el.className = 'cloud';
+            el.innerText = '☁️';
+            el.style.top = Math.random() * (window.innerHeight / 1.5) + 'px';
+            container.appendChild(el);
+            clouds.push({ el: el, x: window.innerWidth + 100 });
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+
+            // Fizyka ptaka
+            velocity += gravity;
+            birdY += velocity;
+
+            // POPRAWKA: Można dotykać góry (odbijanie od sufitu)
+            if (birdY < 0) {
+                birdY = 0;
+                velocity = 0;
+            }
+
+            bird.style.top = birdY + 'px';
+
+            // Rotacja ptaka
+            const rotation = Math.min(Math.max(velocity * 3.5, -25), 40);
+            bird.style.transform = `rotate(${rotation}deg)`;
+
+            // Przegrana przy upadku na dół
+            if (birdY > window.innerHeight - 45) {
+                gameOver();
+                return;
+            }
+
+            // Chmury
+            cloudTimer++;
+            if (cloudTimer > 180) {
+                spawnCloud();
+                cloudTimer = 0;
+            }
+            clouds.forEach((cloud, index) => {
+                cloud.x -= 0.8;
+                cloud.el.style.left = cloud.x + 'px';
+                if (cloud.x < -150) {
+                    cloud.el.remove();
+                    clouds.splice(index, 1);
+                }
+            });
+
+            // Przeszkody
+            obstacleTimer++;
+            if (obstacleTimer > 110) {
+                spawnObstacle();
+                obstacleTimer = 0;
+            }
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.x -= obstacleSpeed;
+                obs.el.style.left = obs.x + 'px';
+
+                // Kolizja
+                const birdRect = bird.getBoundingClientRect();
+                const obsRect = obs.el.getBoundingClientRect();
+
+                if (
+                    birdRect.left + 8 < obsRect.right - 8 &&
+                    birdRect.right - 8 > obsRect.left + 8 &&
+                    birdRect.top + 8 < obsRect.bottom - 8 &&
+                    birdRect.bottom - 8 > obsRect.top + 8
+                ) {
+                    gameOver();
+                    return;
+                }
+
+                // Punktacja
+                if (!obs.passed && obs.x < 50) {
+                    obs.passed = true;
+                    score++;
+                    scoreEl.innerText = score;
+                    dawid108++;
+                    localStorage.setItem("dawid108", dawid108);
+                    console.log("dawid108:", dawid108);
+                    obstacleSpeed += 0.04;
+                }
+
+                // POPRAWKA: Przeszkody znikają znacznie później
+                if (obs.x < -200) {
+                    obs.el.remove();
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameActive = false;
+            let record = localStorage.getItem('ptak') || 0;
+            if (score > parseInt(record)) {
+                record = score;
+                localStorage.setItem('ptak', record);
+            }
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('best-score').innerText = record;
+            modal.style.display = 'flex';
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
