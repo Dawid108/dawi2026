@@ -52,7 +52,7 @@
 
         .obstacle {
             position: absolute;
-            left: 100vw; /* Start poza ekranem po prawej */
+            left: 100vw;
             font-size: 45px;
             z-index: 5;
             display: flex;
@@ -130,7 +130,7 @@
 
     <div id="game-over-modal">
         <div class="modal-box">
-            <h1>Koniec Gry!</h1>
+            <h1 id="fail-type">PRZEGRANA!</h1>
             <div class="stat">Wynik: <span id="final-score">0</span></div>
             <div class="stat">Rekord: <span id="best-score">0</span></div>
             <button id="restart-btn" onclick="restartGame()">Nowa Gra</button>
@@ -143,13 +143,14 @@
         const bird = document.getElementById('bird');
         const scoreEl = document.getElementById('score-board');
         const modal = document.getElementById('game-over-modal');
+        const failText = document.getElementById('fail-type');
 
         let score = 0;
         let gameActive = false;
         let birdY = window.innerHeight / 2;
         let velocity = 0;
-        const gravity = 0.22; // Delikatnie mniejsza grawitacja
-        const jump = -5.5;
+        const gravity = 0.23;
+        const jump = -5.8;
         let obstacles = [];
         let clouds = [];
         let obstacleTimer = 0;
@@ -161,7 +162,6 @@
             velocity = jump;
         }
 
-        // --- OBSŁUGA STEROWANIA ---
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
@@ -196,17 +196,10 @@
             const el = document.createElement('div');
             el.className = 'obstacle';
             el.innerText = Math.random() > 0.5 ? '✈️' : '🚁';
-            
             const randomY = Math.random() * (window.innerHeight - 150) + 75;
             el.style.top = randomY + 'px';
-            
             container.appendChild(el);
-            obstacles.push({
-                el: el,
-                x: window.innerWidth + 50,
-                y: randomY,
-                passed: false
-            });
+            obstacles.push({ el: el, x: window.innerWidth + 50, y: randomY, passed: false });
         }
 
         function spawnCloud() {
@@ -221,56 +214,43 @@
         function gameLoop() {
             if (!gameActive) return;
 
-            // Fizyka ptaka
             velocity += gravity;
             birdY += velocity;
 
-            // POPRAWKA: Można dotykać góry (odbijanie od sufitu)
+            // ZASADA: Przegrana przy dotknięciu GÓRY lub DOŁU
             if (birdY < 0) {
-                birdY = 0;
-                velocity = 0;
+                failText.innerText = "ZA WYSOKO! ☁️";
+                gameOver();
+                return;
             }
-
-            bird.style.top = birdY + 'px';
-
-            // Rotacja ptaka
-            const rotation = Math.min(Math.max(velocity * 3.5, -25), 40);
-            bird.style.transform = `rotate(${rotation}deg)`;
-
-            // Przegrana przy upadku na dół
             if (birdY > window.innerHeight - 45) {
+                failText.innerText = "UPADEK! 💥";
                 gameOver();
                 return;
             }
 
+            bird.style.top = birdY + 'px';
+            const rotation = Math.min(Math.max(velocity * 3.5, -25), 40);
+            bird.style.transform = `rotate(${rotation}deg)`;
+
             // Chmury
             cloudTimer++;
-            if (cloudTimer > 180) {
-                spawnCloud();
-                cloudTimer = 0;
-            }
+            if (cloudTimer > 180) { spawnCloud(); cloudTimer = 0; }
             clouds.forEach((cloud, index) => {
                 cloud.x -= 0.8;
                 cloud.el.style.left = cloud.x + 'px';
-                if (cloud.x < -150) {
-                    cloud.el.remove();
-                    clouds.splice(index, 1);
-                }
+                if (cloud.x < -150) { cloud.el.remove(); clouds.splice(index, 1); }
             });
 
             // Przeszkody
             obstacleTimer++;
-            if (obstacleTimer > 110) {
-                spawnObstacle();
-                obstacleTimer = 0;
-            }
+            if (obstacleTimer > 110) { spawnObstacle(); obstacleTimer = 0; }
 
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 const obs = obstacles[i];
                 obs.x -= obstacleSpeed;
                 obs.el.style.left = obs.x + 'px';
 
-                // Kolizja
                 const birdRect = bird.getBoundingClientRect();
                 const obsRect = obs.el.getBoundingClientRect();
 
@@ -280,11 +260,11 @@
                     birdRect.top + 8 < obsRect.bottom - 8 &&
                     birdRect.bottom - 8 > obsRect.top + 8
                 ) {
+                    failText.innerText = "KOLIZJA! ✈️";
                     gameOver();
                     return;
                 }
 
-                // Punktacja
                 if (!obs.passed && obs.x < 50) {
                     obs.passed = true;
                     score++;
@@ -292,10 +272,9 @@
                     dawid108++;
                     localStorage.setItem("dawid108", dawid108);
                     console.log("dawid108:", dawid108);
-                    obstacleSpeed += 0.05;
+                    obstacleSpeed += 0.06;
                 }
 
-                // POPRAWKA: Przeszkody znikają znacznie później
                 if (obs.x < -200) {
                     obs.el.remove();
                     obstacles.splice(i, 1);
