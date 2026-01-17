@@ -28,6 +28,7 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
+            height: 100svh;
             margin: 0;
             overflow: hidden;
             touch-action: none;
@@ -106,14 +107,14 @@
         <div id="score-hud">0</div>
 
         <div id="game-over-modal">
-            <h2>Koniec Gry! 🌵</h2>
+            <h2>Koniec Gry!</h2>
             <div class="stat-box">Wynik: <span id="final-score" class="highlight">0</span></div>
             <div class="stat-box">Rekord: <span id="best-score" class="highlight">0</span></div>
-            <button onclick="resetGame()">Nowa Gra 🔄</button>
+            <button onclick="resetGame()">Nowa Gra</button>
         </div>
     </div>
 
-    <div class="hint">PC: Spacja | Mobile: Dotknij ekranu | Ptaki od 50 pkt!</div>
+    <div class="hint">PC: Spacja | Telefon: Dotknij ekranu | Ptaki od 50 pkt!</div>
 
 <script>
     let dawid108 = localStorage.getItem("dawid108") || 0;
