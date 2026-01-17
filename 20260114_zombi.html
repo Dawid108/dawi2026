@@ -33,6 +33,8 @@
         #game-area {
             position: relative;
             width: 100vw;
+            width: 100svw;
+            height: 100vh;
             height: 100svh;
             background: linear-gradient(to bottom, #1e272e 0%, #2d3436 90%, #44bd32 90%, #2ecc71 100%);
         }
@@ -140,7 +142,7 @@
     </div>
 
     <div id="game-over-modal">
-        <h1>TWÓRCA ZDOBYTY! 🧟</h1>
+        <h1>Koniec Gry!</h1>
         <div class="result-item">Wynik: <span id="final-score">0</span></div>
         <div class="result-item">Rekord: <span id="best-score">0</span></div>
         <button id="restart-btn" onclick="restartGame()">Nowa Gra</button>
