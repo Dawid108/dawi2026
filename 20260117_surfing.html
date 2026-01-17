@@ -32,7 +32,9 @@
 
         #game-container {
             position: relative;
+            width: 100vw;
             width: 100svw;
+            height: 100vh;
             height: 100svh;
             background: linear-gradient(180deg, #0097e6 0%, #00a8ff 100%);
             /* Efekt poruszającej się wody */
@@ -162,7 +164,7 @@
         let waves = [];
         let lastTime = 0;
         let spawnTimer = 0;
-        let difficultySpeed = 6;
+        let difficultySpeed = 8;
 
         // --- STEROWANIE ---
 
@@ -196,7 +198,7 @@
 
         function startGame() {
             score = 0;
-            difficultySpeed = 6;
+            difficultySpeed = 8;
             obstacles = [];
             surferX = window.innerWidth / 2;
             gameActive = true;
