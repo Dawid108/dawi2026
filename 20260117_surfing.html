@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <title>Surfing</title>
     <meta name="description" content="Surfing">
@@ -162,7 +162,7 @@
         let waves = [];
         let lastTime = 0;
         let spawnTimer = 0;
-        let difficultySpeed = 4;
+        let difficultySpeed = 6;
 
         // --- STEROWANIE ---
 
@@ -196,7 +196,7 @@
 
         function startGame() {
             score = 0;
-            difficultySpeed = 4;
+            difficultySpeed = 6;
             obstacles = [];
             surferX = window.innerWidth / 2;
             gameActive = true;
