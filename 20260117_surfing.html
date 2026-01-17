@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Surfing</title>
+    <meta name="description" content="Surfing">
+    <meta name="author" content="Dawid Gustowski">
+
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Dawid">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#00a8ff">
+
+    <script src="./script.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #00a8ff;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100svh;
+            background: linear-gradient(180deg, #0097e6 0%, #00a8ff 100%);
+            /* Efekt poruszającej się wody */
+            background-size: 100% 200%;
+            animation: waterFlow 3s linear infinite;
+        }
+
+        @keyframes waterFlow {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 0% 100%; }
+        }
+
+        #surfer {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            font-size: 60px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform: translateX(-50%);
+            z-index: 10;
+            transition: left 0.1s ease-out;
+        }
+
+        .obstacle {
+            position: absolute;
+            top: -100px;
+            font-size: 50px;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .wave-line {
+            position: absolute;
+            font-size: 30px;
+            opacity: 0.3;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+
+        /* Modal Końca Gry */
+        #game-over-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .modal-box {
+            background: #f5f6fa;
+            color: #2f3640;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            min-width: 300px;
+        }
+
+        h1 { color: #e84118; margin-top: 0; }
+        .stat { font-size: 26px; margin: 15px 0; font-weight: bold; }
+
+        #restart-btn {
+            background: #4cd137;
+            color: white;
+            border: none;
+            padding: 15px 45px;
+            font-size: 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(76, 209, 55, 0.4);
+            font-weight: bold;
+        }
+
+        #restart-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="score-board">Punkty: <span id="score">0</span></div>
+        <div id="surfer">🏄</div>
+    </div>
+
+    <div id="game-over-modal">
+        <div class="modal-box">
+            <h1>Koniec Gry!</h1>
+            <div class="stat">Wynik: <span id="final-score">0</span></div>
+            <div class="stat">Rekord: <span id="best-score">0</span></div>
+            <button id="restart-btn" onclick="restartGame()">Nowa Gra</button>
+        </div>
+    </div>
+
+    <script>
+        let dawid108 = localStorage.getItem("dawid108") || 0;
+        const container = document.getElementById('game-container');
+        const surfer = document.getElementById('surfer');
+        const scoreEl = document.getElementById('score');
+        const modal = document.getElementById('game-over-modal');
+
+        let score = 0;
+        let gameActive = false;
+        let surferX = window.innerWidth / 2;
+        let obstacles = [];
+        let waves = [];
+        let lastTime = 0;
+        let spawnTimer = 0;
+        let difficultySpeed = 4;
+
+        // --- STEROWANIE ---
+
+        // Klawiatura (Strzałki)
+        window.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            const step = 45;
+            if (e.key === 'ArrowLeft') surferX -= step;
+            if (e.key === 'ArrowRight') surferX += step;
+            limitSurfer();
+        });
+
+        // Telefon i Myszka (Podążanie za dotykiem)
+        function handleMove(e) {
+            if (!gameActive) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            surferX = clientX;
+            limitSurfer();
+        }
+
+        window.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); }, {passive: false});
+        window.addEventListener('mousemove', handleMove);
+
+        function limitSurfer() {
+            if (surferX < 30) surferX = 30;
+            if (surferX > window.innerWidth - 30) surferX = window.innerWidth - 30;
+            surfer.style.left = surferX + 'px';
+        }
+
+        // --- LOGIKA ---
+
+        function startGame() {
+            score = 0;
+            difficultySpeed = 4;
+            obstacles = [];
+            surferX = window.innerWidth / 2;
+            gameActive = true;
+            
+            scoreEl.innerText = score;
+            modal.style.display = 'none';
+            surfer.style.left = surferX + 'px';
+            
+            // Czyszczenie
+            document.querySelectorAll('.obstacle, .wave-line').forEach(el => el.remove());
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function spawnObstacle() {
+            const el = document.createElement('div');
+            el.className = 'obstacle';
+            // 50% szans na rekina lub kłodę
+            el.innerText = Math.random() > 0.5 ? '🦈' : '🪵';
+            
+            const x = Math.random() * (window.innerWidth - 60) + 30;
+            el.style.left = x + 'px';
+            el.style.top = '-100px';
+            
+            container.appendChild(el);
+            obstacles.push({
+                el: el,
+                y: -100,
+                x: x,
+                passed: false
+            });
+        }
+
+        function spawnWave() {
+            const el = document.createElement('div');
+            el.className = 'wave-line';
+            el.innerText = '🌊';
+            const x = Math.random() * window.innerWidth;
+            el.style.left = x + 'px';
+            el.style.top = '-50px';
+            container.appendChild(el);
+            waves.push({ el: el, y: -50 });
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameActive) return;
+
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // Spawnowanie fal (dekoracja)
+            if (Math.random() < 0.05) spawnWave();
+
+            // Spawnowanie przeszkód
+            spawnTimer += deltaTime || 0;
+            let spawnInterval = 1500 - (score * 20);
+            if (spawnInterval < 500) spawnInterval = 500;
+
+            if (spawnTimer > spawnInterval) {
+                spawnObstacle();
+                spawnTimer = 0;
+            }
+
+            // Ruch fal dekoracyjnych
+            waves.forEach((w, i) => {
+                w.y += difficultySpeed;
+                w.el.style.top = w.y + 'px';
+                if (w.y > window.innerHeight) {
+                    w.el.remove();
+                    waves.splice(i, 1);
+                }
+            });
+
+            // Ruch przeszkód
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.y += difficultySpeed;
+                obs.el.style.top = obs.y + 'px';
+
+                // Kolizja
+                const sRect = surfer.getBoundingClientRect();
+                const oRect = obs.el.getBoundingClientRect();
+
+                if (
+                    sRect.left + 15 < oRect.right - 15 &&
+                    sRect.right - 15 > oRect.left + 15 &&
+                    sRect.top + 15 < oRect.bottom - 15 &&
+                    sRect.bottom - 15 > oRect.top + 15
+                ) {
+                    gameOver();
+                    return;
+                }
+
+                // Punktacja
+                if (!obs.passed && obs.y > surfer.getBoundingClientRect().top) {
+                    obs.passed = true;
+                    score++;
+                    scoreEl.innerText = score;
+                    dawid108++;
+                    localStorage.setItem("dawid108", dawid108);
+                    console.log("dawid108:", dawid108);
+                    difficultySpeed += 0.1; // Przyspieszenie
+                }
+
+                if (obs.y > window.innerHeight) {
+                    obs.el.remove();
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameActive = false;
+            let record = localStorage.getItem('surfing') || 0;
+            if (score > parseInt(record)) {
+                record = score;
+                localStorage.setItem('surfing', record);
+            }
+
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('best-score').innerText = record;
+            modal.style.display = 'flex';
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
