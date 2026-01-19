@@ -216,10 +216,21 @@
         function spawnObstacle() {
             const el = document.createElement('div');
             el.className = 'obstacle';
-            // 50% szans na rekina lub kłodę
-            el.innerText = Math.random() > 0.5 ? '🦈' : '🪵';
             
-            const x = Math.random() * (window.innerWidth - 60) + 30;
+            let x;
+            // Co 4 przeszkoda celuje w gracza (Homing)
+            if (obstacles.length % 4 === 0 && obstacles.length > 0) {
+                el.innerText = '🦈';
+                x = surferX - 30; // Celuje w środek surfera
+            } else {
+                el.innerText = Math.random() > 0.5 ? '🦈' : '🪵';
+                x = Math.random() * (window.innerWidth - 50);
+            }
+            
+            // Zabezpieczenie przed wyjściem poza ekran
+            if (x < 0) x = 0;
+            if (x > window.innerWidth - 50) x = window.innerWidth - 50;
+        
             el.style.left = x + 'px';
             el.style.top = '-100px';
             
@@ -283,10 +294,10 @@
                 const oRect = obs.el.getBoundingClientRect();
 
                 if (
-                    sRect.left + 15 < oRect.right - 15 &&
-                    sRect.right - 15 > oRect.left + 15 &&
-                    sRect.top + 15 < oRect.bottom - 15 &&
-                    sRect.bottom - 15 > oRect.top + 15
+                    sRect.left + 5 < oRect.right - 5 &&
+                    sRect.right - 5 > oRect.left + 5 &&
+                    sRect.top + 5 < oRect.bottom - 5 &&
+                    sRect.bottom - 5 > oRect.top + 5
                 ) {
                     gameOver();
                     return;
