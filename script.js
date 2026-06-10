@@ -6,4 +6,5 @@ if ('serviceWorker' in navigator) {
 setInterval(() => {
     dawid108++;
     localStorage.setItem("dawid108", dawid108);
+    console.log("Dodano punkt. Aktualnie:", dawid108);
 }, 5000);
