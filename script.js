@@ -11,3 +11,22 @@ setInterval(() => {
     localStorage.setItem("czas108", czas108);
     console.log("Czas:", czas108);
 }, 1000);
+
+let id108 = localStorage.getItem("id108");
+
+if (
+    !id108 ||
+    isNaN(id108)
+) {
+    id108 =
+    Math.floor(Math.random() * 1000) + 1;
+
+    localStorage.setItem(
+        "id108",
+        id108
+    );
+
+    console.log("Nowe id108:", id108);
+} else {
+    console.log("Istniejące id108:", id108);
+}
