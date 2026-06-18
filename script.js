@@ -10,7 +10,7 @@ setInterval(() => {
     czas108++;
     localStorage.setItem("czas108", czas108);
     console.log("Czas:", czas108);
-}, 1000);
+}, 5000);
 
 let id108 = localStorage.getItem("id108");
 
