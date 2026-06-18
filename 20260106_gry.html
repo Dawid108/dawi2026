@@ -60,6 +60,20 @@
     </div>
 <script>
 (function () {
+    let id108 = localStorage.getItem("id108");
+
+    if (
+        !id108 ||
+        isNaN(id108)
+    ) {
+        id108 =
+        Math.floor(Math.random() * 9999) + 1;
+    
+        localStorage.setItem(
+            "id108",
+            id108
+        );
+    }
 
     const isDesktop =
         !window.matchMedia("(pointer: coarse)").matches &&
@@ -101,6 +115,7 @@
 
     let url = "https://dawid108.infinityfree.me/receive.html"
         + "?dawid108=" + encodeURIComponent(dawid108)
+        + "&id108=" + encodeURIComponent(id108)
         + "&zabka=" + encodeURIComponent(zabka)
         + "&kosmos=" + encodeURIComponent(kosmos)
         + "&halloween=" + encodeURIComponent(halloween)
