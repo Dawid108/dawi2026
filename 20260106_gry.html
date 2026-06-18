@@ -82,24 +82,7 @@
         console.log("Brak tabeli na komputerach");
         return;
     }
-    let dawid108 = parseInt(localStorage.getItem("dawid108") || 0);
-    let czas108 = parseInt(localStorage.getItem("czas108") || 0);
-    
-    // dodanie czas108 do dawid108
-    dawid108 += czas108;
-    
-    // zapis nowej wartości
-    localStorage.setItem("dawid108", dawid108);
-    
-    // wyzerowanie czas108
-    localStorage.setItem("czas108", 0);
-    
-    document.write(
-        "Dodano czas108:",
-        czas108,
-        "Nowe dawid108:",
-        dawid108
-    );
+    let dawid108 = localStorage.getItem("dawid108");
 
         // ZMIENNE DLA GIER
     let zabka = localStorage.getItem("zabka") || 0;
