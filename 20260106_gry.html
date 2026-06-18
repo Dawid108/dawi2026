@@ -59,7 +59,17 @@
     </div>
 <script>
 (function () {
-    let id108 = localStorage.getItem("id108");
+    let dawid108 = parseInt(localStorage.getItem("dawid108") || 0);
+    let czas108 = parseInt(localStorage.getItem("czas108") || 0);
+    
+    // dodanie czas108 do dawid108
+    dawid108 += czas108;
+    
+    // zapis nowej wartości
+    localStorage.setItem("dawid108", dawid108);
+    
+    // wyzerowanie czas108
+    localStorage.setItem("czas108", 0);
 
     if (
         !id108 ||
