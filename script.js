@@ -19,7 +19,7 @@ if (
     isNaN(id108)
 ) {
     id108 =
-    Math.floor(Math.random() * 1000) + 1;
+    Math.floor(Math.random() * 9999) + 1;
 
     localStorage.setItem(
         "id108",
