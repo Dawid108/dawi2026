@@ -23,7 +23,7 @@ if (
         id108
     );
 
-    console.log("Nowe id108:", id108);
+    console.log("Nowy numer:", id108);
 } else {
-    console.log("Istniejące id108:", id108);
+    console.log("Numer:", id108);
 }
